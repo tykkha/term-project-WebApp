@@ -16,7 +16,7 @@
 | Student Name | School Email | GitHub Username |
 |    :---:     |     :---:     |     :---:       |
 | member1      |               |                 |
-| member2      |               |                 |
+| Connor M     | cmoore14@sfsu.edu | tykkha      |
 | member3      |               |                 |
 | member4      |               |                 |
 | member5      |               |                 |
