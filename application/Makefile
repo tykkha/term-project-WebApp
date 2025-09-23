@@ -16,7 +16,7 @@ build-web:
 	cd web && npm run build
 
 deploy-web:
-	cd web && npm run build && mv build /var/www/sveltekit && sudo systemctl reload nginx
+	cd web && npm run build && sudo rsync -a --delete build/ /var/www/sveltekit && sudo systemctl reload nginx
 
 build-api:
 	cd api/app && . .venv/bin/activate && pip install -r requirements.txt
