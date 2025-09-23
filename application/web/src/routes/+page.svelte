@@ -1,6 +1,18 @@
+<script>
+	import Person from '../components/person.svelte';
+</script>
+
 <div class="min-w-screen min-h-screen bg-white">
-	<h1>Welcome to SvelteKit</h1>
-	<p>
-		Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation
-	</p>
+	<h1 class="w-full pt-8 text-center text-5xl font-bold">About Us</h1>
+	<div class="mx-auto flex w-full max-w-3xl justify-between text-center">
+		<Person
+			name="Jason Javandel"
+			github="https://github.com/CherryYeti"
+			src="https://avatars.githubusercontent.com/u/53279269?v=4"
+		/>
+		<Person name="test" />
+		<Person name="test" />
+		<Person name="test" />
+		<Person name="test" />
+	</div>
 </div>
