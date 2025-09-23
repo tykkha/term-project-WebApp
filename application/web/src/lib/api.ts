@@ -1,0 +1,1 @@
+export const API_BASE = '/api'; // nginx will proxy this to 127.0.0.1:8000
