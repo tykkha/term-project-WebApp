@@ -7,16 +7,16 @@
 
 # Below is a list of items required. Missing items will causes points to be deducted from multiple milestone submissions.
 
-1. Server URL or IP
-2. SSH username
-3. SSH password or key.
-    <br> If a ssh key is used please upload the key to the credentials folder.
-4. Database URL or IP and port used.
-    <br><strong> NOTE THIS DOES NOT MEAN YOUR DATABASE NEEDS A PUBLIC FACING PORT.</strong> But knowing the IP and port number will help with SSH tunneling into the database. The default port is more than sufficient for this class.
-5. Database username
-6. Database password
-7. Database name (basically the name that contains all your tables)
+1. Server URL or IP:<br>`ec2-3-145-22-67.us-east-2.compute.amazonaws.com`<br>`http://3.145.22.67/`
+2. SSH username: `ubuntu`
+3. SSH password or key.  :`team9awskey.pem`
+4. Database URL or IP and port used.:`127.0.0.1:33060`
+5. Database username: `appuser`
+6. Database password: `pCoCpEdCqpTcAePWxiAminolkdqkY7z5gee2YqzTNrvEMvGmAX3ZDB0XrStj0abPcRg7v7GPOglzHtQpmRHTKr89skRcvr6s1VI2gQVpFvp31JNaHh1ZO06koWjRA0bQ`
+7. Database name (basically the name that contains all your tables):`appdb`
 8. Instructions on how to use the above information.
+
+In order to access the  server via ssh, run the following command inside the credentials folder `ssh -i team9awskey.pem ubuntu@ec2-3-145-22-67.us-east-2.compute.amazonaws.com`
 
 # Most important things to Remember
 ## These values need to kept update to date throughout the semester. <br>
