@@ -3,7 +3,11 @@
 </script>
 
 <div class="min-w-screen min-h-screen bg-white">
-	<h1 class="w-full pt-8 text-center text-5xl font-bold">About Us</h1>
+	<h1 class="w-full py-8 text-center text-5xl font-bold">About Us</h1>
+	<h1 class="w-full py-2 text-center text-4xl font-bold">Software Engineering class SFSU</h1>
+	<h2 class="w-full py-2 text-center text-3xl font-bold">Fall 2025</h2>
+	<h2 class="w-full py-2 text-center text-3xl font-bold">Section 01</h2>
+	<h2 class="w-full py-2 text-center text-3xl font-bold">Team 09</h2>
 	<div class="mx-auto flex w-full max-w-3xl justify-center gap-8 text-center">
 		<Person
 			url="/about/jason"
