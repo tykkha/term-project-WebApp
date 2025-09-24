@@ -15,7 +15,11 @@
 			github="https://github.com/tykkha"
 			src="https://cdn.discordapp.com/attachments/748252014978269184/1420161031128485929/foeed0h3hsqf1.png?ex=68d46387&is=68d31207&hm=e319ba1f52ebe6fcd215cc2d59fba1d8ec796158d317aa5db1ac88745c538b7f&"
 		/>
-		<Person name="test" />
+		<Person 
+			name="Andy Yip"
+			github="https://github.com/andyyip915"
+			src="https://avatars.githubusercontent.com/u/120161192?v=4"
+		/>
 		<Person name="test" />
 		<Person name="test" />
 	</div>
