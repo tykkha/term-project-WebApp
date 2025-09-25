@@ -3,7 +3,7 @@
 </script>
 
 <div class="min-w-screen min-h-screen bg-white">
-	<h1 class="w-full pt-8 text-center text-5xl font-bold">About Me</h1>
+	<h1 class="w-full pt-8 text-center text-5xl font-bold">About me</h1>
 	<div class="mx-auto flex w-full max-w-3xl justify-center text-center pt-6">
 		<Person
 			name="Shirish Maharjan"
