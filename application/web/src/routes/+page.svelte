@@ -28,6 +28,7 @@
 			src="https://avatars.githubusercontent.com/u/120161192?v=4"
 		/>
 		<Person
+			url="/about/Shirish"
 			name="Shirish Maharjan"
 			github="https://github.com/shirishsm5"
 			src="https://avatars.githubusercontent.com/shirishsm5"
