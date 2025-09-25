@@ -33,11 +33,11 @@
 			github="https://github.com/shirishsm5"
 			src="https://avatars.githubusercontent.com/shirishsm5"
 		/>
-		<person
-		url="/about/manea"
-		name="Manea Manea"
-		github="https;//github.com/manea127"
-		src="https://avatars.githubusercontent.com/manea127"
-		<Person name="test" />
+		<Person
+			url="/about/manea"
+			name="Manea Manea"
+			github="https;//github.com/manea127"
+			src="https://avatars.githubusercontent.com/manea127"
+		/>
 	</div>
 </div>
