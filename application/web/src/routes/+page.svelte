@@ -1,4 +1,5 @@
 <script>
+	import Tutorcard from '$lib/components/tutorcard.svelte';
 	import Person from '../lib/components/person.svelte';
 </script>
 
@@ -40,4 +41,9 @@
 			src="https://avatars.githubusercontent.com/manea127"
 		/>
 	</div>
+	<Tutorcard
+		tutor_name="Test"
+		tutor_description="This is an example description for a tutor."
+		tutor_img="https://avatars.githubusercontent.com/manea127"
+	/>
 </div>
