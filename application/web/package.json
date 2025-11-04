@@ -38,6 +38,7 @@
 		"vite": "^7.0.4"
 	},
 	"dependencies": {
-		"@ark-ui/svelte": "^5.12.1"
+		"@ark-ui/svelte": "^5.12.1",
+		"@lucide/svelte": "^0.552.0"
 	}
 }
