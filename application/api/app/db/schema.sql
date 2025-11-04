@@ -2,6 +2,7 @@ DROP DATABASE IF EXISTS GatorGuides;
 CREATE DATABASE GatorGuides;
 USE GatorGuides;
 
+# Registered User table and content
 DROP TABLE IF EXISTS User;
 CREATE TABLE User
 (
@@ -11,13 +12,15 @@ CREATE TABLE User
     Type     ENUM ('user', 'admin')
 );
 
+# Lookup table for tags (class name + number)
 DROP TABLE IF EXISTS Tags;
 CREATE TABLE Tags
 (
     tagsID INT PRIMARY KEY AUTO_INCREMENT,
-    tags   VARCHAR(50)
+    tags   VARCHAR(8)
 );
 
+# Tutor (also a registered user) contains rating and relevant info
 DROP TABLE IF EXISTS Tutor;
 CREATE TABLE Tutor
 (
@@ -27,18 +30,20 @@ CREATE TABLE Tutor
     FOREIGN KEY (uid) REFERENCES User (uid) ON DELETE CASCADE
 );
 
+# Posts table contains posts made by tutors and relevant content
 DROP TABLE IF EXISTS Posts;
 CREATE TABLE Posts
 (
     pid       INT PRIMARY KEY AUTO_INCREMENT,
     tid       INT NOT NULL,
     tags      INT NOT NULL,
-    bio       TEXT,
+    content   TEXT,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (tid) REFERENCES Tutor (tid) ON DELETE CASCADE,
     FOREIGN KEY (tags) REFERENCES Tags (tagsID) ON DELETE CASCADE
 );
 
+# Profile table contains information to populate profiles
 DROP TABLE IF EXISTS Profile;
 CREATE TABLE Profile
 (
@@ -51,6 +56,7 @@ CREATE TABLE Profile
     FOREIGN KEY (tags) REFERENCES Tags (tagsID) ON DELETE CASCADE
 );
 
+# Sessions table holds all past, current, and future tutoring sessions scheduled
 DROP TABLE IF EXISTS Sessions;
 CREATE TABLE Sessions
 (
@@ -65,6 +71,7 @@ CREATE TABLE Sessions
     FOREIGN KEY (tags) REFERENCES Tags (tagsID) ON DELETE CASCADE
 );
 
+# Generic messages table to populate dms between users and tutors
 DROP TABLE IF EXISTS Messages;
 CREATE TABLE Messages
 (
