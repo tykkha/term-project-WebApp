@@ -3,62 +3,22 @@
 </script>
 
 <nav>
-	<div class="fixed top-0 flex w-full flex-row gap-8 bg-white p-8 text-black">
-		<img src="/sfsu_logo.png" alt="San Francisco State University Logo" class="max-h-8" />
+	<div class="fixed inset-x-0 top-0 z-50 flex h-20 items-center gap-8 bg-[#231161] p-8 text-white">
+		<img
+			src="/sfsu_logo_text_white.png"
+			alt="San Francisco State University Logo"
+			class="max-h-8"
+		/>
 		<h2 class="text-3xl font-bold">Gator Guides</h2>
-		<Menu.Root>
-			<Menu.Trigger>Open Menu</Menu.Trigger>
-			<Menu.Positioner>
-				<Menu.Content>
-					<Menu.ItemGroup>
-						<Menu.ItemGroupLabel>My Account</Menu.ItemGroupLabel>
-						<Menu.Separator />
-						<Menu.Item value="profile">
-							<!-- <UserIcon /> -->
-							Profile
-							<span>⇧⌘P</span>
-						</Menu.Item>
-						<Menu.Item value="billing">
-							<!-- <CreditCardIcon />  -->
-							Billing
-						</Menu.Item>
-						<Menu.Item value="settings">
-							<!-- <SettingsIcon /> -->
-							Settings
-							<span>⌘,</span>
-						</Menu.Item>
-						<Menu.Root positioning={{ placement: 'right-start', gutter: -2 }}>
-							<Menu.TriggerItem>
-								<!-- <UserPlusIcon /> -->
-								Invite member
-								<!-- <ChevronRightIcon /> -->
-							</Menu.TriggerItem>
-							<Menu.Positioner>
-								<Menu.Content>
-									<Menu.Item value="email">
-										<!-- <MailIcon />  -->
-										Email
-									</Menu.Item>
-									<Menu.Item value="message">
-										<!-- <MessageSquareIcon />  -->
-										Message
-									</Menu.Item>
-									<Menu.Separator />
-									<Menu.Item value="other">
-										<!-- <PlusCircleIcon /> -->
-										More Options...
-									</Menu.Item>
-								</Menu.Content>
-							</Menu.Positioner>
-						</Menu.Root>
-						<Menu.Separator />
-						<Menu.Item value="logout">
-							<!-- <LogOutIcon /> -->
-							Logout
-						</Menu.Item>
-					</Menu.ItemGroup>
-				</Menu.Content>
-			</Menu.Positioner>
-		</Menu.Root>
+
+		<div class="flex-1"></div>
+		<p class="hover:cursor-pointer">Login</p>
+		<p class="hover:cursor-pointer">Register</p>
+	</div>
+	<div class="mt-20 flex w-full justify-center gap-8 bg-[#ffdc70] p-2 text-center text-black">
+		<p>Home</p>
+		<p>Glossary</p>
+		<p>Calendar</p>
+		<p>Appointments</p>
 	</div>
 </nav>
