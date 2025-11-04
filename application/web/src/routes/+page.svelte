@@ -43,7 +43,8 @@
 	</div>
 	<Tutorcard
 		tutor_name="Test"
-		tutor_description="This is an example description for a tutor."
-		tutor_img="https://avatars.githubusercontent.com/manea127"
+		tutor_description="This is an example description for a tutor. This is an example description for a tutor. This is an example description for a tutor."
+		tutor_img="https://avatars.githubusercontent.com/tykkha"
+		tutor_subjects={['CSC415', 'CSC648']}
 	/>
 </div>
