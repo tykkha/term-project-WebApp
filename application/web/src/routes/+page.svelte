@@ -3,7 +3,9 @@
 	import Person from '../lib/components/person.svelte';
 </script>
 
-<div class="min-w-screen min-h-screen bg-white">
+<div class="min-w-screen min-h-screen bg-neutral-200">
+	<!-- #f2f2f2 -->
+	<!-- #ffffff -->
 	<!-- <h1 class="w-full py-8 text-center text-5xl font-bold">About Us</h1>
 	<h1 class="w-full py-2 text-center text-4xl font-bold">Software Engineering class SFSU</h1>
 	<h2 class="w-full py-2 text-center text-3xl font-bold">Fall 2025</h2>
@@ -41,10 +43,28 @@
 			src="https://avatars.githubusercontent.com/manea127"
 		/>
 	</div> -->
-	<Tutorcard
+	<!-- <Tutorcard
 		tutor_name="Test"
 		tutor_description="This is an example description for a tutor. This is an example description for a tutor. This is an example description for a tutor."
 		tutor_img="https://avatars.githubusercontent.com/tykkha"
 		tutor_subjects={['CSC415', 'CSC648']}
-	/>
+	/> -->
+	<div class="flex flex-col gap-8 p-8 md:flex-row">
+		<div class="w-full rounded-2xl bg-neutral-100 p-4 drop-shadow-lg md:w-1/3">
+			<h3 class="mb-4 text-3xl underline decoration-[#231161] decoration-4 underline-offset-8">
+				Your Courses
+			</h3>
+			<p class="text-xl">CSC 415</p>
+			<p class="text-xl">CSC 648</p>
+			<p class="text-xl">JAPN 001</p>
+		</div>
+		<div class="w-full rounded-2xl bg-neutral-100 p-4 drop-shadow-lg md:w-2/3">
+			<h3 class=" pb-4 text-3xl underline decoration-[#231161] decoration-4 underline-offset-8">
+				Current Appointments
+			</h3>
+			<div class="flex w-full items-center justify-center">
+				<p>You currently have no scheduled appointments.</p>
+			</div>
+		</div>
+	</div>
 </div>
