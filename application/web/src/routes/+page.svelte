@@ -56,7 +56,7 @@
 			</h3>
 			<p class="text-xl">CSC 415</p>
 			<p class="text-xl">CSC 648</p>
-			<p class="text-xl">JAPN 001</p>
+			<p class="text-xl">JAPN 201</p>
 		</div>
 		<div class="w-full rounded-2xl bg-neutral-100 p-4 drop-shadow-lg md:w-2/3">
 			<h3 class=" pb-4 text-3xl underline decoration-[#231161] decoration-4 underline-offset-8">
