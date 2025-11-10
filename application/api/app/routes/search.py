@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Dict, Any
-from app.db.Search import GatorGuidesSearch
-from ..core.config import settings
+from db.Search import GatorGuidesSearch  # Changed from app.db.Search to db.Search
+from core.config import settings
 
 router = APIRouter()
 search_instance = None

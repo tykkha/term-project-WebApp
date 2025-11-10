@@ -1,9 +1,9 @@
 from typing import Union
 
 from fastapi import FastAPI
-from app.routes import search
+from routes import search  # Changed from app.routes to routes
 
-app = FastAPI()
+app = FastAPI(title="GatorGuides API")
 
 
 @app.get("/")
