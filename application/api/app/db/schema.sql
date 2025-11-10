@@ -6,10 +6,12 @@ USE GatorGuides;
 DROP TABLE IF EXISTS User;
 CREATE TABLE User
 (
-    uid      INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
-    email    VARCHAR(255) UNIQUE            NOT NULL,
-    password VARCHAR(255)                   NOT NULL,
-    Type     ENUM ('user', 'admin')
+    uid       INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    firstName VARCHAR(255)                   NOT NULL,
+    lastName  VARCHAR(255)                   NOT NULL,
+    email     VARCHAR(255) UNIQUE            NOT NULL,
+    password  VARCHAR(255)                   NOT NULL,
+    Type      ENUM ('user', 'admin')
 );
 
 # Lookup table for tags (class name + number)
