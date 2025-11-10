@@ -1,7 +1,7 @@
 from typing import Union
 
 from fastapi import FastAPI
-from routes import search 
+from app.routes import search
 
 app = FastAPI()
 
