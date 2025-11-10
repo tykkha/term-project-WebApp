@@ -19,7 +19,7 @@
 
 		isLoading = true;
 		try {
-			const response = await fetch(`/api/v1/search/${encodeURIComponent(searchQuery)}`);
+			const response = await fetch(`/api/search/${encodeURIComponent(searchQuery)}`);
 			const data = await response.json();
 			searchResults = data;
 		} catch (error) {

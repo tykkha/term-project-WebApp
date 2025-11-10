@@ -19,7 +19,7 @@ export interface SearchResult {
 }
 
 export async function searchTutors(query: string): Promise<SearchResult[]> {
-	const response = await fetch(`/api/v1/search/${encodeURIComponent(query)}`);
+	const response = await fetch(`/api/search/${encodeURIComponent(query)}`);
 	if (!response.ok) {
 		throw new Error('Search request failed');
 	}
