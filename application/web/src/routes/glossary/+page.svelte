@@ -9,9 +9,18 @@
 	const formatted = today.toISOString().split('T')[0];
 	let value = $state([parseDate(formatted)]);
 
+	interface Tutor {
+		name: string;
+		rating?: number;
+		email?: string;
+		courses: string[];
+		bio?: string;
+		posts: { course: string; content: string }[];
+	}
+
 	// Search state
 	let searchQuery = $state('');
-	let searchResults = $state([]);
+	let searchResults = $state([]) as Tutor[];
 	let isLoading = $state(false);
 
 	async function handleSearch() {
@@ -21,7 +30,7 @@
 		try {
 			const response = await fetch(`/api/search/${encodeURIComponent(searchQuery)}`);
 			const data = await response.json();
-			searchResults = data;
+			searchResults = data as Tutor[];
 		} catch (error) {
 			console.error('Search failed:', error);
 		} finally {
@@ -41,6 +50,12 @@
 					<input
 						type="text"
 						bind:value={searchQuery}
+						onkeydown={(e) => {
+							if (e.key === 'Enter') {
+								e.preventDefault();
+								handleSearch();
+							}
+						}}
 						placeholder="Search by course code or tutor name..."
 						class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-[#231161] focus:outline-none"
 					/>
