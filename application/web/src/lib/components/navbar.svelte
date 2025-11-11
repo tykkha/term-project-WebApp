@@ -21,7 +21,7 @@
 		<div class="flex-1"></div>
 		<div class="hidden gap-8 sm:flex sm:flex-row">
 			<a href="/login">Login</a>
-			<a href="/register">Resgister</a>
+			<a href="/register">Register</a>
 		</div>
 		<div class="flex sm:hidden">
 			<button class="hover:cursor-pointer" type="button" onclick={() => (open = !open)}
@@ -50,7 +50,7 @@
 			</button>
 
 			<a href="/login" class="text-3xl">Login</a>
-			<a href="/register" class="text-3xl">Resgister</a>
+			<a href="/register" class="text-3xl">Register</a>
 		</div>
 	</div>
 {/if}
