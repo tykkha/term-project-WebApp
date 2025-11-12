@@ -1,6 +1,6 @@
 PY=python3
 
-.PHONY: setup dev api-dev web-dev build-web build-api migrate test lint deploy
+.PHONY: setup dev api-dev web-dev build-web build-api migrate test lint deploy server-api server-web
 
 setup:
 	cd api/app && $(PY) -m venv .venv && . .venv/bin/activate && pip install -U pip wheel && pip install -r requirements.txt || true
@@ -23,3 +23,13 @@ build-api:
 
 deploy:
 	bash infra/scripts/deploy.sh
+
+server-api:
+	git pull origin main
+	rm -rf /var/www/api/app && cp -r api/app /var/www/api/app && cd /var/www/api/app && $(PY) -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
+	sudo systemctl restart api.service
+
+server-web:
+	git pull origin main
+	rm -rf /var/www/svelte/* && cd ../.. && unzip build.zip && cd build && cp -r * /var/www/svelte/
+	sudo systemctl restart svelte.service
