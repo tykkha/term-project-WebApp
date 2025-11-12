@@ -3,7 +3,7 @@
 	import Person from '../lib/components/person.svelte';
 </script>
 
-<div class="min-w-screen min-h-screen bg-neutral-200">
+<div class="min-w-screen min-h-screen bg-neutral-100">
 	<!-- #f2f2f2 -->
 	<!-- #ffffff -->
 	<!-- <h1 class="w-full py-8 text-center text-5xl font-bold">About Us</h1>
@@ -49,19 +49,15 @@
 		tutor_img="https://avatars.githubusercontent.com/tykkha"
 		tutor_subjects={['CSC415', 'CSC648']}
 	/> -->
-	<div class="flex flex-col gap-8 p-8 md:flex-row">
-		<div class="w-full rounded-2xl bg-neutral-100 p-4 drop-shadow-lg md:w-1/3">
-			<h3 class="mb-4 text-3xl underline decoration-[#231161] decoration-4 underline-offset-8">
-				Your Courses
-			</h3>
+	<div class="mx-auto flex max-w-7xl flex-col gap-8 p-8 md:flex-row">
+		<div class="w-full rounded-2xl bg-white p-4 drop-shadow-lg md:w-1/3">
+			<h3 class="mb-4 text-2xl font-bold text-gray-800">Your Courses</h3>
 			<p class="text-xl">CSC 415</p>
 			<p class="text-xl">CSC 648</p>
 			<p class="text-xl">JAPN 201</p>
 		</div>
-		<div class="w-full rounded-2xl bg-neutral-100 p-4 drop-shadow-lg md:w-2/3">
-			<h3 class=" pb-4 text-3xl underline decoration-[#231161] decoration-4 underline-offset-8">
-				Current Appointments
-			</h3>
+		<div class="w-full rounded-2xl bg-white p-4 drop-shadow-lg md:w-2/3">
+			<h3 class="mb-4 text-2xl font-bold text-gray-800">Current Appointments</h3>
 			<div class="flex w-full items-center justify-center">
 				<p>You currently have no scheduled appointments.</p>
 			</div>

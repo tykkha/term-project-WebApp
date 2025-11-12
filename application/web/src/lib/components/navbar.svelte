@@ -77,7 +77,7 @@
 						}
 					}}
 					placeholder="Search"
-					class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-black focus:border-[#231161] focus:outline-none"
+					class="w-full rounded-lg border bg-white px-4 py-2 text-black focus:outline-none"
 				/>
 			</Field.Root>
 			<a href="/login" class="text-3xl">Login</a>
