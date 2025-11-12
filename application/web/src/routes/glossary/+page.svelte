@@ -3,7 +3,7 @@
 	import { Field } from '@ark-ui/svelte/field';
 	import { Portal } from '@ark-ui/svelte/portal';
 	import { CalendarIcon, ChevronLeft, ChevronRight, Search as SearchIcon } from '@lucide/svelte';
-	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 
 	const today = new Date();
 	const formatted = today.toISOString().split('T')[0];
@@ -35,6 +35,16 @@
 			console.error('Search failed:', error);
 		} finally {
 			isLoading = false;
+		}
+	}
+	if (browser) {
+		const urlParams = new URLSearchParams(window.location.search);
+		console.log(urlParams.size);
+		if (urlParams.size > 0) {
+			if (urlParams.has('search')) {
+				searchQuery = urlParams.get('search')!;
+				handleSearch();
+			}
 		}
 	}
 </script>

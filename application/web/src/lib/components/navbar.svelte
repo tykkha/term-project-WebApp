@@ -1,8 +1,12 @@
 <script>
-	import { Dialog, Menu, Portal } from '@ark-ui/svelte';
-	import { Avatar } from '@ark-ui/svelte/avatar';
-	import { MenuIcon, XIcon } from '@lucide/svelte';
-
+	import { Dialog, Field, Menu, Portal } from '@ark-ui/svelte';
+	import { MenuIcon, SearchIcon, XIcon } from '@lucide/svelte';
+	import { goto } from '$app/navigation';
+	let searchQuery = $state('');
+	async function handleSearch() {
+		console.log(searchQuery);
+		goto(`glossary?search=${searchQuery}`);
+	}
 	let open = $state(false);
 </script>
 
@@ -19,7 +23,21 @@
 			<h2 class="text-3xl font-bold">Gator Guides</h2>
 		</a>
 		<div class="flex-1"></div>
-		<div class="hidden gap-8 sm:flex sm:flex-row">
+		<div class="hidden items-center gap-8 sm:flex sm:flex-row">
+			<Field.Root class="flex items-center justify-center gap-4">
+				<input
+					type="text"
+					bind:value={searchQuery}
+					onkeydown={(e) => {
+						if (e.key === 'Enter') {
+							e.preventDefault();
+							handleSearch();
+						}
+					}}
+					placeholder="Search"
+					class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-black focus:border-[#231161] focus:outline-none"
+				/>
+			</Field.Root>
 			<a href="/login">Login</a>
 			<a href="/register">Register</a>
 		</div>
@@ -34,7 +52,7 @@
 		<a href="/">Home</a>
 		<a href="/calendar">Calendar</a>
 		<a href="/glossary">Glossary</a>
-		<a href="/appointments">Appointments</a>
+		<a href="/dashboard">Dashboard</a>
 	</div>
 
 	<div class="flex w-full justify-center gap-8 bg-[#ff7070] p-2 text-center text-black">
@@ -50,6 +68,7 @@
 			</button>
 
 			<a href="/login" class="text-3xl">Login</a>
+
 			<a href="/register" class="text-3xl">Register</a>
 		</div>
 	</div>
