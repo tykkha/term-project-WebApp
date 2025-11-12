@@ -44,24 +44,21 @@
 		<section class="mb-8 rounded-2xl bg-white p-6 shadow-lg">
 			<h2 class="mb-4 text-2xl font-bold text-gray-800">Search Tutors</h2>
 
-			<div class="flex gap-4">
-				<Field.Root class="flex-1 items-center justify-center">
-					<Field.Label>Search</Field.Label>
-					<input
-						type="text"
-						bind:value={searchQuery}
-						onkeydown={(e) => {
-							if (e.key === 'Enter') {
-								e.preventDefault();
-								handleSearch();
-							}
-						}}
-						placeholder="Search by course code or tutor name..."
-						class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-[#231161] focus:outline-none"
-					/>
-					<Field.ErrorText>No results found</Field.ErrorText>
-				</Field.Root>
-
+			<Field.Root class="flex items-center justify-center gap-4">
+				<Field.Label>Search</Field.Label>
+				<input
+					type="text"
+					bind:value={searchQuery}
+					onkeydown={(e) => {
+						if (e.key === 'Enter') {
+							e.preventDefault();
+							handleSearch();
+						}
+					}}
+					placeholder="Search by course code or tutor name..."
+					class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-[#231161] focus:outline-none"
+				/>
+				<Field.ErrorText>No results found</Field.ErrorText>
 				<button
 					onclick={handleSearch}
 					disabled={isLoading}
@@ -70,7 +67,7 @@
 					<SearchIcon size={20} />
 					{isLoading ? 'Searching...' : 'Search'}
 				</button>
-			</div>
+			</Field.Root>
 		</section>
 
 		{#if searchResults.length > 0}
