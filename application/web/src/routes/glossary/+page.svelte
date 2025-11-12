@@ -54,8 +54,7 @@
 		<section class="mb-8 rounded-2xl bg-white p-6 shadow-lg">
 			<h2 class="mb-4 text-2xl font-bold text-gray-800">Search Tutors</h2>
 
-			<Field.Root class="flex items-center justify-center gap-4">
-				<Field.Label>Search</Field.Label>
+			<Field.Root class="flex flex-col items-center justify-center gap-4 sm:flex-row">
 				<input
 					type="text"
 					bind:value={searchQuery}
@@ -72,7 +71,7 @@
 				<button
 					onclick={handleSearch}
 					disabled={isLoading}
-					class="inline-flex items-center gap-2 rounded-lg bg-[#231161] px-4 py-2 text-white hover:bg-[#2d1982] disabled:bg-[#231161]/50"
+					class="inline-flex w-full items-center gap-2 rounded-lg bg-[#231161] px-4 py-2 text-white hover:bg-[#2d1982] disabled:bg-[#231161]/50 sm:w-auto"
 				>
 					<SearchIcon size={20} />
 					{isLoading ? 'Searching...' : 'Search'}

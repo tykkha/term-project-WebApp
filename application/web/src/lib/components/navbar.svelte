@@ -11,19 +11,19 @@
 </script>
 
 <nav class="sticky top-0 z-50">
-	<div class="flex h-20 items-center gap-2 bg-[#231161] p-8 text-white sm:gap-8">
+	<div class="flex h-20 items-center gap-2 bg-[#231161] p-8 text-white md:gap-8">
 		<a href="/">
 			<img
 				src="/sfsu_logo_text_white.png"
 				alt="San Francisco State University Logo"
-				class="hidden max-h-8 sm:block"
+				class="hidden max-h-8 md:block"
 			/>
 		</a>
 		<a href="/">
 			<h2 class="text-3xl font-bold">Gator Guides</h2>
 		</a>
 		<div class="flex-1"></div>
-		<div class="hidden items-center gap-8 sm:flex sm:flex-row">
+		<div class="hidden items-center gap-8 md:flex md:flex-row">
 			<Field.Root class="flex items-center justify-center gap-4">
 				<input
 					type="text"
@@ -41,7 +41,7 @@
 			<a href="/login">Login</a>
 			<a href="/register">Register</a>
 		</div>
-		<div class="flex sm:hidden">
+		<div class="flex md:hidden">
 			<button class="hover:cursor-pointer" type="button" onclick={() => (open = !open)}
 				><MenuIcon /></button
 			>
@@ -66,9 +66,21 @@
 			<button class="ml-auto hover:cursor-pointer" type="button" onclick={() => (open = !open)}>
 				<XIcon />
 			</button>
-
+			<Field.Root class="flex items-center justify-center gap-4">
+				<input
+					type="text"
+					bind:value={searchQuery}
+					onkeydown={(e) => {
+						if (e.key === 'Enter') {
+							e.preventDefault();
+							handleSearch();
+						}
+					}}
+					placeholder="Search"
+					class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-black focus:border-[#231161] focus:outline-none"
+				/>
+			</Field.Root>
 			<a href="/login" class="text-3xl">Login</a>
-
 			<a href="/register" class="text-3xl">Register</a>
 		</div>
 	</div>
