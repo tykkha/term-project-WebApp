@@ -14,7 +14,7 @@
                 <div class="flex-col">
                     <!--Should check input for possible date-->
                     <label for="date" class="block text-xl">Date</label>
-                    <input type="text" class="bg">
+                    <input type="text" class="">
                     <!---->                        
                     <label for="time" class="block text-xl">Time</label>
                     <input type="text" id="">
