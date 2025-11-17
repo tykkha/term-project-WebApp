@@ -73,25 +73,22 @@
         },
         reviews: [
             {
-                rId: 101,
+                rId: 1,
                 studentName: "Alex R.",
                 rating: 4.5,
                 feedback: "Jane is an amazing tutor! She helped me understand complex Physics concepts easily. Highly recommend!",
-                date: "Nov 15, 2025"
             },
             {
-                rId: 102,
+                rId: 2,
                 studentName: "Sam K.",
                 rating: 4,
                 feedback: "Great session on data structures. Jane is very patient and knowledgeable in Computer Science. A bit hard to book a time, but worth it.",
-                date: "Nov 12, 2025"
             },
             {
-                rId: 103,
+                rId: 3,
                 studentName: "Taylor M.",
                 rating: 5,
                 feedback: "Excellent tutor for my introductory CS class. She clarified my code debugging issues very quickly!",
-                date: "Nov 9, 2025"
             }
         ]
     };
@@ -181,12 +178,9 @@
                 <h2 class="mb-4 text-2xl underline text-center">Reviews</h2>
                 {#each reviews as review (review.rId)}
                     <div class="mb-4 rounded-2xl p-3 shadow-sm">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="font-semibold text-lg">{review.studentName}</span>
-                            <span class="text-sm text-neutral-500">{review.date}</span>
-                        </div>
-                        <div class="text-2xl text-green-500 mb-2">
-                            <span>{review.rating}</span>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-2xl bg-green-500 px-3 py-1">{review.rating}</span>
+                            <span class="font-bold text-xl">{review.studentName}</span>
                         </div>
                         <div>
                             <p class="text-base italic">"{review.feedback}"</p>
