@@ -14,9 +14,9 @@
 	<div class="flex h-20 items-center gap-2 bg-[#231161] p-8 text-white md:gap-8">
 		<a href="/">
 			<img
-				src="/sfsu_logo_text_white.png"
-				alt="San Francisco State University Logo"
-				class="hidden max-h-8 md:block"
+					src="/sfsu_logo_text_white.png"
+					alt="San Francisco State University Logo"
+					class="hidden max-h-8 md:block"
 			/>
 		</a>
 		<a href="/">
@@ -26,16 +26,16 @@
 		<div class="hidden items-center gap-8 md:flex md:flex-row">
 			<Field.Root class="flex items-center justify-center gap-4">
 				<input
-					type="text"
-					bind:value={searchQuery}
-					onkeydown={(e) => {
+						type="text"
+						bind:value={searchQuery}
+						onkeydown={(e) => {
 						if (e.key === 'Enter') {
 							e.preventDefault();
 							handleSearch();
 						}
 					}}
-					placeholder="Search"
-					class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-black focus:border-[#231161] focus:outline-none"
+						placeholder="Search"
+						class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-black focus:border-[#231161] focus:outline-none"
 				/>
 			</Field.Root>
 			<a href="/login">Login</a>
@@ -43,7 +43,7 @@
 		</div>
 		<div class="flex md:hidden">
 			<button class="hover:cursor-pointer" type="button" onclick={() => (open = !open)}
-				><MenuIcon /></button
+			><MenuIcon /></button
 			>
 		</div>
 	</div>
@@ -68,16 +68,16 @@
 			</button>
 			<Field.Root class="flex items-center justify-center gap-4">
 				<input
-					type="text"
-					bind:value={searchQuery}
-					onkeydown={(e) => {
+						type="text"
+						bind:value={searchQuery}
+						onkeydown={(e) => {
 						if (e.key === 'Enter') {
 							e.preventDefault();
 							handleSearch();
 						}
 					}}
-					placeholder="Search"
-					class="w-full rounded-lg border bg-white px-4 py-2 text-black focus:outline-none"
+						placeholder="Search"
+						class="w-full rounded-lg border bg-white px-4 py-2 text-black focus:outline-none"
 				/>
 			</Field.Root>
 			<a href="/login" class="text-3xl">Login</a>
