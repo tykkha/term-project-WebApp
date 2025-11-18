@@ -2,6 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Dict, Any
 from db.Search import GatorGuidesSearch  # Changed from app.db.Search to db.Search
 from core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 search_instance = None
@@ -24,4 +27,5 @@ async def search(query: str, search_db: GatorGuidesSearch = Depends(get_search))
         results = search_db.search(query)
         return results
     except Exception as e:
+        logger.error(f"Search error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
