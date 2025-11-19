@@ -1,60 +1,58 @@
 <script lang="ts">
-    import '../app.css';
-    import favicon from '$lib/assets/favicon.svg';
-    import Navbar from '$lib/components/navbar.svelte';
-    import Footer from '$lib/components/footer.svelte';
-    import LoginModal from '$lib/components/LoginModal.svelte';
-    import { page } from '$app/stores';
-    import { browser } from '$app/environment';
+	import '../app.css';
+	import favicon from '$lib/assets/favicon.svg';
+	import Navbar from '$lib/components/navbar.svelte';
+	import Footer from '$lib/components/footer.svelte';
+	import LoginModal from '$lib/components/LoginModal.svelte';
+	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 
-    let { children } = $props();
+	let { children } = $props();
 
-    let loginModalOpen = $state(false);
+	let loginModalOpen = $state(false);
 
-    // Check if user was logged in before
-    let isLoggedIn = $state(
-        browser && sessionStorage.getItem('isLoggedIn') === 'true'
-    );
+	// Check if user was logged in before
+	let isLoggedIn = $state(browser && sessionStorage.getItem('isLoggedIn') === 'true');
 
-    let lastPath = $state('');
+	let lastPath = $state('');
 
-    //show popup immediately on every route change
-    $effect(() => {
-        const currentPath = $page.url.pathname;
+	//show popup immediately on every route change
+	$effect(() => {
+		const currentPath = $page.url.pathname;
 
-        //if route changed and not logged in
-        if (currentPath !== lastPath && !isLoggedIn) {
-            loginModalOpen = true;
-        }
+		//if route changed and not logged in
+		if (currentPath !== lastPath && !isLoggedIn) {
+			loginModalOpen = false;
+		}
 
-        lastPath = currentPath;
-    });
+		lastPath = currentPath;
+	});
 
-    function handleLogin(userData: any) {
-        isLoggedIn = true;
-        loginModalOpen = false;
+	function handleLogin(userData: any) {
+		isLoggedIn = true;
+		loginModalOpen = false;
 
-        // Save login state in browser
-        if (browser) {
-            sessionStorage.setItem('isLoggedIn', 'true');
-        }
+		// Save login state in browser
+		if (browser) {
+			sessionStorage.setItem('isLoggedIn', 'true');
+		}
 
-        console.log('User logged in:', userData);
-    }
+		console.log('User logged in:', userData);
+	}
 
-    function handleLogout() {
-        isLoggedIn = false;
-        loginModalOpen = true;
+	function handleLogout() {
+		isLoggedIn = false;
+		loginModalOpen = true;
 
-        // Clear login state from browser
-        if (browser) {
-            sessionStorage.removeItem('isLoggedIn');
-        }
-    }
+		// Clear login state from browser
+		if (browser) {
+			sessionStorage.removeItem('isLoggedIn');
+		}
+	}
 </script>
 
 <svelte:head>
-    <link rel="icon" href={favicon} />
+	<link rel="icon" href={favicon} />
 </svelte:head>
 
 <Navbar />
@@ -63,5 +61,5 @@
 
 <!--login popup-->
 {#if !isLoggedIn}
-    <LoginModal bind:isOpen={loginModalOpen} onLogin={handleLogin} />
+	<LoginModal bind:isOpen={loginModalOpen} onLogin={handleLogin} />
 {/if}
