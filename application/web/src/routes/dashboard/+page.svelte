@@ -2,6 +2,24 @@
 	import { Calendar, Clock, BookOpen, User, Search } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	//user data to be fetched from backend
+
+	type Appointment = {
+		subject: string;
+		status: string;
+		tutorName: string;
+		date: string;
+		time: string;
+		location: string;
+		id: number;
+	};
+	type Tutor = {
+  name:string;
+	subject:string;
+	rating:number;
+	availability:string;
+	id:number
+	}
+
 	let userData = $state({
 		name: '',
 		email: '',
@@ -10,10 +28,9 @@
 		courses: []
 	});
 	//appointments will be fetched from backend
-	let appointments = $state([]);
-
+	let appointments = $state<Appointment[]>([]);
 	//available tutors will be fetched from backend
-	let availableTutors = $state([]);
+	let availableTutors = $state<Tutor[]>([]);
 
 	//loading states
 	let isLoading = $state(true);
@@ -71,11 +88,7 @@
 	// Load data when component mounts
 	onMount(async () => {
 		isLoading = true;
-		await Promise.all([
-			loadUserData(),
-			loadAppointments(),
-			loadTutors()
-		]);
+		await Promise.all([loadUserData(), loadAppointments(), loadTutors()]);
 		isLoading = false;
 	});
 
@@ -102,13 +115,13 @@
 		alert('Profile editing will be implemented in next milestone');
 	}
 </script>
+
 <div class="min-h-screen bg-neutral-100 p-6">
 	<div class="mx-auto max-w-7xl">
-
 		{#if isLoading}
 			<div class="flex min-h-[60vh] items-center justify-center">
 				<div class="text-center">
-					<Clock size={64} class="mx-auto mb-4 text-gray-400 animate-pulse" />
+					<Clock size={64} class="mx-auto mb-4 animate-pulse text-gray-400" />
 					<p class="text-xl text-gray-600">Loading your dashboard...</p>
 					<p class="mt-2 text-sm text-gray-500">Waiting for backend connection</p>
 				</div>
@@ -116,12 +129,15 @@
 		{:else if error}
 			<div class="flex min-h-[60vh] items-center justify-center">
 				<div class="text-center">
-					<div class="mb-4 flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-red-100">
+					<div
+						class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100"
+					>
 						<span class="text-2xl text-red-600">!</span>
-					</div>					<p class="text-xl text-red-600">{error}</p>
+					</div>
+					<p class="text-xl text-red-600">{error}</p>
 					<button
-							onclick={() => window.location.reload()}
-							class="mt-4 rounded-lg bg-[#231161] px-6 py-2 text-white hover:bg-[#1a0d4a]"
+						onclick={() => window.location.reload()}
+						class="mt-4 rounded-lg bg-[#231161] px-6 py-2 text-white hover:bg-[#1a0d4a]"
 					>
 						Retry
 					</button>
@@ -180,15 +196,22 @@
 						{#if appointments.length > 0}
 							<div class="space-y-4">
 								{#each appointments as appointment}
-									<div class="flex items-start justify-between rounded-xl border border-gray-200 p-4 transition-all hover:border-[#231161] hover:shadow-md">
+									<div
+										class="flex items-start justify-between rounded-xl border border-gray-200 p-4 transition-all hover:border-[#231161] hover:shadow-md"
+									>
 										<div class="flex-1">
 											<div class="mb-2 flex items-center gap-2">
 												<h3 class="text-lg font-semibold text-gray-800">{appointment.subject}</h3>
-												<span class="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+												<span
+													class="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700"
+												>
 													{appointment.status}
 												</span>
 											</div>
-											<p class="mb-1 text-gray-600"><strong>Tutor:</strong> {appointment.tutorName}</p>
+											<p class="mb-1 text-gray-600">
+												<strong>Tutor:</strong>
+												{appointment.tutorName}
+											</p>
 											<p class="mb-1 text-gray-600">
 												<Calendar class="mr-1 inline-block" size={16} />
 												{appointment.date} at {appointment.time}
@@ -196,10 +219,15 @@
 											<p class="text-gray-600"><span class="mr-1"></span>{appointment.location}</p>
 										</div>
 										<div class="flex flex-col gap-2">
-											<button class="rounded-lg bg-[#231161] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a0d4a]">
+											<button
+												class="rounded-lg bg-[#231161] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a0d4a]"
+											>
 												Join Session
 											</button>
-											<button onclick={() => handleCancelAppointment(appointment.id)} class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+											<button
+												onclick={() => handleCancelAppointment(appointment.id)}
+												class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+											>
 												Cancel
 											</button>
 										</div>
@@ -215,23 +243,32 @@
 						{/if}
 					</section>
 
-
-
 					<section class="rounded-2xl bg-white p-6 shadow-lg">
 						<h2 class="mb-6 text-2xl font-bold text-gray-800">Find Tutors</h2>
 
 						<div class="mb-6 grid gap-4 md:grid-cols-3">
 							<div class="relative">
 								<Search size={20} class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-								<input type="text" bind:value={searchQuery} placeholder="Search tutors..." class="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-opacity-50" />
+								<input
+									type="text"
+									bind:value={searchQuery}
+									placeholder="Search tutors..."
+									class="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-opacity-50"
+								/>
 							</div>
-							<select bind:value={selectedSubject} class="rounded-lg border border-gray-300 px-4 py-2 focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-opacity-50">
+							<select
+								bind:value={selectedSubject}
+								class="rounded-lg border border-gray-300 px-4 py-2 focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-opacity-50"
+							>
 								<option value="all">All Subjects</option>
 								{#each userData.courses || [] as course}
 									<option value={course}>{course}</option>
 								{/each}
 							</select>
-							<select bind:value={selectedAvailability} class="rounded-lg border border-gray-300 px-4 py-2 focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-opacity-50">
+							<select
+								bind:value={selectedAvailability}
+								class="rounded-lg border border-gray-300 px-4 py-2 focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-opacity-50"
+							>
 								<option value="all">All Availability</option>
 								<option value="now">Available Now</option>
 								<option value="today">Available Today</option>
@@ -242,9 +279,13 @@
 						{#if availableTutors.length > 0}
 							<div class="space-y-4">
 								{#each availableTutors as tutor}
-									<div class="flex items-center justify-between rounded-xl border border-gray-200 p-4 transition-all hover:border-[#231161] hover:shadow-md">
+									<div
+										class="flex items-center justify-between rounded-xl border border-gray-200 p-4 transition-all hover:border-[#231161] hover:shadow-md"
+									>
 										<div class="flex items-center gap-4">
-											<div class="flex h-12 w-12 items-center justify-center rounded-full bg-[#231161]">
+											<div
+												class="flex h-12 w-12 items-center justify-center rounded-full bg-[#231161]"
+											>
 												<User size={24} class="text-white" />
 											</div>
 											<div>
@@ -257,7 +298,10 @@
 												</div>
 											</div>
 										</div>
-										<button onclick={() => handleBookAppointment(tutor.id)} class="rounded-lg bg-[#231161] px-6 py-2 font-medium text-white hover:bg-[#1a0d4a]">
+										<button
+											onclick={() => handleBookAppointment(tutor.id)}
+											class="rounded-lg bg-[#231161] px-6 py-2 font-medium text-white hover:bg-[#1a0d4a]"
+										>
 											Book Session
 										</button>
 									</div>
@@ -277,15 +321,27 @@
 					<section class="mb-8 rounded-2xl bg-white p-6 shadow-lg">
 						<h2 class="mb-4 text-xl font-bold text-gray-800">Your Profile</h2>
 						<div class="mb-4 flex items-center justify-center">
-							<div class="flex h-24 w-24 items-center justify-center rounded-full bg-[#231161] text-3xl font-bold text-white">
-								{userData.name ? userData.name.split(' ').map((n) => n[0]).join('') : '?'}
+							<div
+								class="flex h-24 w-24 items-center justify-center rounded-full bg-[#231161] text-3xl font-bold text-white"
+							>
+								{userData.name
+									? userData.name
+											.split(' ')
+											.map((n) => n[0])
+											.join('')
+									: '?'}
 							</div>
 						</div>
 						<div class="text-center">
-							<h3 class="mb-1 text-lg font-semibold text-gray-800">{userData.name || 'Loading...'}</h3>
+							<h3 class="mb-1 text-lg font-semibold text-gray-800">
+								{userData.name || 'Loading...'}
+							</h3>
 							<p class="mb-2 text-sm text-gray-600">{userData.email || 'Loading...'}</p>
 							<p class="mb-4 text-sm text-gray-600">ID: {userData.studentId || 'Loading...'}</p>
-							<button onclick={handleEditProfile} class="w-full rounded-lg border border-[#231161] px-4 py-2 font-medium text-[#231161] hover:bg-[#231161] hover:text-white">
+							<button
+								onclick={handleEditProfile}
+								class="w-full rounded-lg border border-[#231161] px-4 py-2 font-medium text-[#231161] hover:bg-[#231161] hover:text-white"
+							>
 								Edit Profile
 							</button>
 						</div>
@@ -296,7 +352,9 @@
 						{#if userData.courses && userData.courses.length > 0}
 							<div class="space-y-2">
 								{#each userData.courses as course}
-									<div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-medium text-gray-700">
+									<div
+										class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 font-medium text-gray-700"
+									>
 										{course}
 									</div>
 								{/each}
@@ -304,7 +362,9 @@
 						{:else}
 							<p class="py-4 text-center text-gray-500">No courses yet</p>
 						{/if}
-						<button class="mt-4 w-full rounded-lg bg-[#ffdc70] px-4 py-2 font-medium text-[#231161] hover:bg-[#f5d05f]">
+						<button
+							class="mt-4 w-full rounded-lg bg-[#ffdc70] px-4 py-2 font-medium text-[#231161] hover:bg-[#f5d05f]"
+						>
 							+ Add Course
 						</button>
 					</section>
@@ -312,13 +372,21 @@
 					<section class="rounded-2xl bg-white p-6 shadow-lg">
 						<h2 class="mb-4 text-xl font-bold text-gray-800">Quick Actions</h2>
 						<div class="space-y-2">
-							<a href="/calendar" class="block rounded-lg border border-gray-200 px-4 py-3 text-center font-medium text-gray-700 hover:bg-gray-50">
+							<a
+								href="/calendar"
+								class="block rounded-lg border border-gray-200 px-4 py-3 text-center font-medium text-gray-700 hover:bg-gray-50"
+							>
 								View Calendar
 							</a>
-							<a href="/glossary" class="block rounded-lg border border-gray-200 px-4 py-3 text-center font-medium text-gray-700 hover:bg-gray-50">
+							<a
+								href="/search"
+								class="block rounded-lg border border-gray-200 px-4 py-3 text-center font-medium text-gray-700 hover:bg-gray-50"
+							>
 								Browse Tutors
 							</a>
-							<button class="w-full rounded-lg border border-gray-200 px-4 py-3 font-medium text-gray-700 hover:bg-gray-50">
+							<button
+								class="w-full rounded-lg border border-gray-200 px-4 py-3 font-medium text-gray-700 hover:bg-gray-50"
+							>
 								Message Center
 							</button>
 						</div>
