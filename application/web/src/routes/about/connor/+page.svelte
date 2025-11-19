@@ -1,5 +1,5 @@
 <script>
-	import Person from '../../../lib/components/person.svelte';
+	import Person from '../../../lib/components/Person.svelte';
 </script>
 
 <div class="min-w-screen min-h-screen bg-white">
@@ -8,7 +8,7 @@
 		<Person
 			name="Connor Moore"
 			github="https://github.com/tykkha"
-			src="https://cdn.discordapp.com/attachments/748252014978269184/1420161031128485929/foeed0h3hsqf1.png?ex=68d46387&is=68d31207&hm=e319ba1f52ebe6fcd215cc2d59fba1d8ec796158d317aa5db1ac88745c538b7f&"
+			src="https://avatars.githubusercontent.com/u/100100421?v=4"
 		/>
 	</div>
 </div>
