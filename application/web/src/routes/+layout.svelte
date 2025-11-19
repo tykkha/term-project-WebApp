@@ -1,8 +1,8 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import Navbar from '$lib/components/navbar.svelte';
-	import Footer from '$lib/components/footer.svelte';
+	import Navbar from '$lib/components/Navbar.svelte';
+	import Footer from '$lib/components/Footer.svelte';
 	import LoginModal from '$lib/components/LoginModal.svelte';
 	import { page } from '$app/stores';
 	import { browser } from '$app/environment';

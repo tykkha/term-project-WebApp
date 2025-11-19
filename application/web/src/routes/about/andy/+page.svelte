@@ -1,5 +1,5 @@
 <script>
-	import Person from '../../../lib/components/person.svelte';
+	import Person from '../../../lib/components/Person.svelte';
 </script>
 
 <div class="min-w-screen min-h-screen bg-white">
