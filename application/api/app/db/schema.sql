@@ -21,7 +21,7 @@ CREATE TABLE Tags
     tagsID INT PRIMARY KEY AUTO_INCREMENT,
     tags   VARCHAR(8)
 );
-
+-- Add approval column entry
 # Tutor (also a registered user) contains rating and relevant info
 DROP TABLE IF EXISTS Tutor;
 CREATE TABLE Tutor
