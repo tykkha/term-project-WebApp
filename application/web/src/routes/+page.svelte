@@ -20,7 +20,7 @@
 			/>
 		</div>
 	</div>
-	<div class="mx-auto flex w-full flex-col gap-8 bg-neutral-100 px-8 pt-[1024px] md:flex-row">
+	<div class="mx-auto flex w-full flex-col gap-8 bg-neutral-100 px-8 pt-32 md:flex-row">
 		<div class="mb-8 w-full rounded-2xl bg-white p-6 shadow-lg">
 			<h3 class="text-2xl">"A lorem ipsum review will go here"</h3>
 			<p class="text-right text-xl">- Satisfied Customer</p>
@@ -35,7 +35,7 @@
 		</div>
 	</div>
 	<div
-		class="mx-auto flex min-h-screen w-full flex-col items-center justify-center gap-8 bg-neutral-100 px-8"
+		class="mx-auto flex w-full flex-col items-center justify-center gap-8 bg-neutral-100 px-8 py-32"
 	>
 		<h1 class="w-full text-center text-5xl font-bold">Meet the Team</h1>
 		<div class="pt-15 mx-auto flex w-full flex-col justify-center gap-8 text-center md:flex-row">
