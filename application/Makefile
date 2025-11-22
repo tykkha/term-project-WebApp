@@ -27,3 +27,6 @@ server-web:
 	git pull origin main
 	rm -rf /var/www/svelte/* && cd ../.. && unzip build.zip && cd build && cp -r * /var/www/svelte/
 	sudo systemctl restart svelte.service
+
+server-db:
+	sudo systemctl stop api.service && cd api/app/db && mysql -u guides -pgatorguides < schema.sql && mysql -u guides -pgatorguides < Inserts.sql && sudo systemctl start api
