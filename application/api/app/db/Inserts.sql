@@ -1,91 +1,70 @@
 USE GatorGuides;
 
--- Insert Users (mix of tutors and regular users)
+-- Insert Users (unchanged)
 INSERT INTO User (firstName, lastName, email, password, Type) VALUES
-('John', 'Smith', 'john.smith@ufl.edu', 'password123', 'user'),
-('Jane', 'Smith', 'jane.smith@ufl.edu', 'password123', 'user'),
-('Michael', 'Johnson', 'michael.johnson@ufl.edu', 'password123', 'user'),
-('Emily', 'Johnson', 'emily.johnson@ufl.edu', 'password123', 'user'),
-('David', 'Williams', 'david.williams@ufl.edu', 'password123', 'user'),
-('Sarah', 'Williams', 'sarah.williams@ufl.edu', 'password123', 'user'),
-('Robert', 'Brown', 'robert.brown@ufl.edu', 'password123', 'user'),
-('Jessica', 'Davis', 'jessica.davis@ufl.edu', 'password123', 'user'),
-('James', 'Miller', 'james.miller@ufl.edu', 'password123', 'user'),
-('Ashley', 'Wilson', 'ashley.wilson@ufl.edu', 'password123', 'user'),
-('Christopher', 'Moore', 'chris.moore@ufl.edu', 'password123', 'user'),
-('Amanda', 'Taylor', 'amanda.taylor@ufl.edu', 'password123', 'user'),
-('Daniel', 'Anderson', 'daniel.anderson@ufl.edu', 'password123', 'user'),
-('Jennifer', 'Thomas', 'jennifer.thomas@ufl.edu', 'password123', 'user'),
-('Matthew', 'Jackson', 'matthew.jackson@ufl.edu', 'password123', 'user'),
-('Lauren', 'White', 'lauren.white@ufl.edu', 'password123', 'user'),
-('Andrew', 'Harris', 'andrew.harris@ufl.edu', 'password123', 'user'),
-('Brittany', 'Martin', 'brittany.martin@ufl.edu', 'password123', 'user'),
-('Joshua', 'Thompson', 'joshua.thompson@ufl.edu', 'password123', 'user'),
-('Samantha', 'Garcia', 'samantha.garcia@ufl.edu', 'password123', 'user'),
-('Kevin', 'Martinez', 'kevin.martinez@ufl.edu', 'password123', 'user'),
-('Nicole', 'Robinson', 'nicole.robinson@ufl.edu', 'password123', 'user'),
-('Ryan', 'Clark', 'ryan.clark@ufl.edu', 'password123', 'user'),
-('Megan', 'Rodriguez', 'megan.rodriguez@ufl.edu', 'password123', 'user'),
-('Brandon', 'Lewis', 'brandon.lewis@ufl.edu', 'password123', 'user'),
-('Rachel', 'Lee', 'rachel.lee@ufl.edu', 'password123', 'user'),
-('Tyler', 'Walker', 'tyler.walker@ufl.edu', 'password123', 'user'),
-('Stephanie', 'Hall', 'stephanie.hall@ufl.edu', 'password123', 'user'),
-('Justin', 'Allen', 'justin.allen@ufl.edu', 'password123', 'user'),
-('Amber', 'Young', 'amber.young@ufl.edu', 'password123', 'user'),
-('Admin', 'User', 'admin@ufl.edu', 'admin123', 'admin');
+('John', 'Smith', 'john.smith@sfsu.edu', 'password123', 'user'),
+('Jane', 'Smith', 'jane.smith@sfsu.edu', 'password123', 'user'),
+('Michael', 'Johnson', 'michael.johnson@sfsu.edu', 'password123', 'user'),
+('Emily', 'Johnson', 'emily.johnson@sfsu.edu', 'password123', 'user'),
+('David', 'Williams', 'david.williams@sfsu.edu', 'password123', 'user'),
+('Sarah', 'Williams', 'sarah.williams@sfsu.edu', 'password123', 'user'),
+('Robert', 'Brown', 'robert.brown@sfsu.edu', 'password123', 'user'),
+('Jessica', 'Davis', 'jessica.davis@sfsu.edu', 'password123', 'user'),
+('James', 'Miller', 'james.miller@sfsu.edu', 'password123', 'user'),
+('Ashley', 'Wilson', 'ashley.wilson@sfsu.edu', 'password123', 'user'),
+('Christopher', 'Moore', 'chris.moore@sfsu.edu', 'password123', 'user'),
+('Amanda', 'Taylor', 'amanda.taylor@sfsu.edu', 'password123', 'user'),
+('Daniel', 'Anderson', 'daniel.anderson@sfsu.edu', 'password123', 'user'),
+('Jennifer', 'Thomas', 'jennifer.thomas@sfsu.edu', 'password123', 'user'),
+('Matthew', 'Jackson', 'matthew.jackson@sfsu.edu', 'password123', 'user'),
+('Lauren', 'White', 'lauren.white@sfsu.edu', 'password123', 'user'),
+('Andrew', 'Harris', 'andrew.harris@sfsu.edu', 'password123', 'user'),
+('Brittany', 'Martin', 'brittany.martin@sfsu.edu', 'password123', 'user'),
+('Joshua', 'Thompson', 'joshua.thompson@sfsu.edu', 'password123', 'user'),
+('Samantha', 'Garcia', 'samantha.garcia@sfsu.edu', 'password123', 'user'),
+('Kevin', 'Martinez', 'kevin.martinez@sfsu.edu', 'password123', 'user'),
+('Nicole', 'Robinson', 'nicole.robinson@sfsu.edu', 'password123', 'user'),
+('Ryan', 'Clark', 'ryan.clark@sfsu.edu', 'password123', 'user'),
+('Megan', 'Rodriguez', 'megan.rodriguez@sfsu.edu', 'password123', 'user'),
+('Brandon', 'Lewis', 'brandon.lewis@sfsu.edu', 'password123', 'user'),
+('Rachel', 'Lee', 'rachel.lee@sfsu.edu', 'password123', 'user'),
+('Tyler', 'Walker', 'tyler.walker@sfsu.edu', 'password123', 'user'),
+('Stephanie', 'Hall', 'stephanie.hall@sfsu.edu', 'password123', 'user'),
+('Justin', 'Allen', 'justin.allen@sfsu.edu', 'password123', 'user'),
+('Amber', 'Young', 'amber.young@sfsu.edu', 'password123', 'user'),
+('Admin', 'User', 'admin@sfsu.edu', 'admin123', 'admin');
 
--- Insert Course Tags
+-- Insert Course Tags (SFSU naming)
 INSERT INTO Tags (tags) VALUES
-('COP3502'),  -- 1: Programming Fundamentals
-('COP3503'),  -- 2: Programming Fundamentals 2
-('COP3530'),  -- 3: Data Structures
-('COP4020'),  -- 4: Programming Languages
-('COP4600'),  -- 5: Operating Systems
-('CDA3101'),  -- 6: Computer Organization
-('COT3100'),  -- 7: Discrete Structures
-('MAC2311'),  -- 8: Calculus 1
-('MAC2312'),  -- 9: Calculus 2
-('MAC2313'),  -- 10: Calculus 3
-('PHY2048'),  -- 11: Physics 1
-('PHY2049'),  -- 12: Physics 2
-('CEN3031'),  -- 13: Software Engineering
-('CNT4007'),  -- 14: Computer Networks
-('CAP4621'),  -- 15: AI Fundamentals
-('CIS4301'),  -- 16: Database Systems
-('COT4501'),  -- 17: Numerical Analysis
-('STA3032'),  -- 18: Statistics
-('MAS3114'),  -- 19: Linear Algebra
-('EEL3135');  -- 20: Signals and Systems
+('CSC 210'),  -- 1: Introduction to Computer Programming
+('CSC 215'),  -- 2: Intermediate Computer Programming
+('CSC 220'),  -- 3: Data Structures
+('CSC 600'),  -- 4: Programming Paradigms and Languages
+('CSC 415'),  -- 5: Operating System Principles
+('CSC 256'),  -- 6: Machine Structures (Computer Organization)
+('CSC 230'),  -- 7: Discrete Mathematical Structures
+('MATH 226'), -- 8: Calculus I
+('MATH 227'), -- 9: Calculus II
+('MATH 228'), -- 10: Calculus III
+('PHYS 220'), -- 11: General Physics with Calculus I
+('PHYS 230'), -- 12: General Physics with Calculus II
+('CSC 648'),  -- 13: Software Engineering
+('CSC 645'),  -- 14: Computer Networks
+('CSC 665'),  -- 15: Artificial Intelligence
+('CSC 675'),  -- 16: Introduction to Database Systems
+('MATH 400'), -- 17: Numerical Analysis
+('MATH 124'), -- 18: Elementary Statistics
+('MATH 225'), -- 19: Introduction to Linear Algebra
+('ENGR 305'); -- 20: Linear Systems Analysis (Signals & Systems)
 
--- Insert Tutors with varying ratings
+-- Insert Tutors with varying ratings (unchanged)
 INSERT INTO Tutor (uid, rating) VALUES
-(1, 4.8),   -- John Smith
-(2, 4.5),   -- Jane Smith
-(3, 4.9),   -- Michael Johnson
-(4, 4.7),   -- Emily Johnson
-(5, 4.3),   -- David Williams
-(6, 4.6),   -- Sarah Williams
-(7, 4.4),   -- Robert Brown
-(8, 4.8),   -- Jessica Davis
-(9, 4.2),   -- James Miller
-(10, 4.9),  -- Ashley Wilson
-(11, 4.5),  -- Christopher Moore
-(12, 4.7),  -- Amanda Taylor
-(13, 4.6),  -- Daniel Anderson
-(14, 4.8),  -- Jennifer Thomas
-(15, 4.4),  -- Matthew Jackson
-(16, 4.9),  -- Lauren White
-(17, 4.3),  -- Andrew Harris
-(18, 4.7),  -- Brittany Martin
-(19, 4.5),  -- Joshua Thompson
-(20, 4.8),  -- Samantha Garcia
-(21, 4.6),  -- Kevin Martinez
-(22, 4.4),  -- Nicole Robinson
-(23, 4.7),  -- Ryan Clark
-(24, 4.9),  -- Megan Rodriguez
-(25, 4.5);  -- Brandon Lewis
+(1, 4.8),(2, 4.5),(3, 4.9),(4, 4.7),(5, 4.3),(6, 4.6),(7, 4.4),(8, 4.8),
+(9, 4.2),(10, 4.9),(11, 4.5),(12, 4.7),(13, 4.6),(14, 4.8),(15, 4.4),
+(16, 4.9),(17, 4.3),(18, 4.7),(19, 4.5),(20, 4.8),(21, 4.6),(22, 4.4),
+(23, 4.7),(24, 4.9),(25, 4.5);
 
--- Insert Profiles for tutors
+-- Insert Profiles for tutors (ids reference the SFSU tag ids above; bios unchanged)
 INSERT INTO Profile (uid, tags, status, bio) VALUES
 (1, 3, 'Available', 'Experienced data structures tutor with 3 years of teaching experience. Specializing in trees, graphs, and algorithms.'),
 (1, 1, 'Available', NULL),
@@ -108,7 +87,7 @@ INSERT INTO Profile (uid, tags, status, bio) VALUES
 (9, 6, 'Available', 'Computer architecture and organization expert. Assembly language and digital logic specialist.'),
 (10, 15, 'Available', 'AI and machine learning tutor. Making complex concepts accessible to everyone.'),
 (10, 16, 'Available', NULL),
-(11, 3, 'Available', 'Data structures wizard! Let me help you ace COP3530 with clear explanations and practice.'),
+(11, 3, 'Available', 'Data structures wizard! Let me help you ace CSC 220 with clear explanations and practice.'),
 (12, 19, 'Available', 'Linear algebra made simple. Matrices, vector spaces, and eigenvalues demystified.'),
 (13, 14, 'Available', 'Network protocols and architecture specialist. TCP/IP, routing, and network security.'),
 (14, 8, 'Available', 'Calculus tutor with a passion for teaching. Limits, derivatives, and integrals explained clearly.'),
@@ -130,15 +109,16 @@ INSERT INTO Profile (uid, tags, status, bio) VALUES
 (25, 7, 'Available', 'Logic and proofs specialist. Helping students build strong mathematical reasoning skills.');
 
 -- Insert Posts for tutors
+-- Note: updated any UF course code mentions to SFSU codes (e.g., COP3530 -> CSC 220, COP3502 -> CSC 210)
 INSERT INTO Posts (tid, tags, content, timestamp) VALUES
 -- John Smith (tid=1) - Data Structures & Programming
-(1, 3, 'Offering tutoring sessions for COP3530! I specialize in binary trees, AVL trees, and graph algorithms. Available Mon-Fri evenings.', '2024-11-01 10:00:00'),
+(1, 3, 'Offering tutoring sessions for CSC 220! I specialize in binary trees, AVL trees, and graph algorithms. Available Mon-Fri evenings.', '2024-11-01 10:00:00'),
 (1, 3, 'New study group forming for midterm prep! Focusing on sorting algorithms and complexity analysis. DM me if interested.', '2024-11-03 14:30:00'),
-(1, 1, 'Beginner-friendly programming sessions available. Let''s work through your COP3502 assignments together!', '2024-11-05 09:00:00'),
+(1, 1, 'Beginner-friendly programming sessions available. Let''s work through your CSC 210 assignments together!', '2024-11-05 09:00:00'),
 
 -- Jane Smith (tid=2) - Programming Fundamentals
 (2, 1, 'Hi everyone! Offering help with loops, conditionals, and functions. Patient explanations guaranteed!', '2024-11-01 11:00:00'),
-(2, 2, 'COP3503 students - struggling with pointers? Let me break it down for you in simple terms.', '2024-11-04 15:00:00'),
+(2, 2, 'CSC 215 students - struggling with pointers? Let me break it down for you in simple terms.', '2024-11-04 15:00:00'),
 (2, 1, 'Office hours this week: Tuesday 3-5pm, Thursday 2-4pm. Come by with questions!', '2024-11-06 08:00:00'),
 
 -- Michael Johnson (tid=3) - Advanced CS
@@ -165,7 +145,7 @@ INSERT INTO Posts (tid, tags, content, timestamp) VALUES
 (7, 12, 'Electricity and magnetism explained! Circuits, fields, and electromagnetic induction.', '2024-11-06 13:00:00'),
 
 -- Jessica Davis (tid=8) - Programming (Multiple Courses)
-(8, 1, 'Just finished COP3502 with an A! Happy to help fellow students with programming basics.', '2024-11-02 10:00:00'),
+(8, 1, 'Just finished CSC 210 with an A! Happy to help fellow students with programming basics.', '2024-11-02 10:00:00'),
 (8, 2, 'Object-oriented programming workshop: classes, objects, inheritance, and polymorphism.', '2024-11-04 16:00:00'),
 (8, 3, 'Data structures study session! Bring your questions about linked lists and stacks.', '2024-11-06 09:00:00'),
 
@@ -179,7 +159,7 @@ INSERT INTO Posts (tid, tags, content, timestamp) VALUES
 (10, 15, 'Neural networks and deep learning. Building your first AI model with Python.', '2024-11-07 14:00:00'),
 
 -- Christopher Moore (tid=11) - Data Structures
-(11, 3, 'COP3530 exam prep! Hash tables, heaps, and priority queues explained clearly.', '2024-11-02 12:00:00'),
+(11, 3, 'CSC 220 exam prep! Hash tables, heaps, and priority queues explained clearly.', '2024-11-02 12:00:00'),
 (11, 3, 'Algorithm analysis workshop: Big O notation, time complexity, and space complexity.', '2024-11-05 16:00:00'),
 
 -- Amanda Taylor (tid=12) - Linear Algebra
@@ -240,8 +220,8 @@ INSERT INTO Posts (tid, tags, content, timestamp) VALUES
 (25, 7, 'Graph theory: paths, cycles, trees, and graph coloring problems.', '2024-11-02 18:00:00'),
 (25, 7, 'Number theory and cryptography basics. Modular arithmetic and RSA algorithm.', '2024-11-06 16:00:00');
 
--- Insert some regular users (non-tutors) for completeness
+-- Insert some regular users (non-tutors) for completeness (unchanged)
 INSERT INTO User (firstName, lastName, email, password, Type) VALUES
-('Mark', 'Johnson', 'mark.johnson@ufl.edu', 'password123', 'user'),
-('Lisa', 'Smith', 'lisa.smith@ufl.edu', 'password123', 'user'),
-('Tom', 'Williams', 'tom.williams@ufl.edu', 'password123', 'user');
+('Mark', 'Johnson', 'mark.johnson@sfsu.edu', 'password123', 'user'),
+('Lisa', 'Smith', 'lisa.smith@sfsu.edu', 'password123', 'user'),
+('Tom', 'Williams', 'tom.williams@sfsu.edu', 'password123', 'user');
