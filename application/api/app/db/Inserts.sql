@@ -1,38 +1,41 @@
 USE GatorGuides;
 
--- Insert Users (unchanged)
-INSERT INTO User (firstName, lastName, email, password, Type) VALUES
-('John', 'Smith', 'john.smith@sfsu.edu', 'password123', 'user'),
-('Jane', 'Smith', 'jane.smith@sfsu.edu', 'password123', 'user'),
-('Michael', 'Johnson', 'michael.johnson@sfsu.edu', 'password123', 'user'),
-('Emily', 'Johnson', 'emily.johnson@sfsu.edu', 'password123', 'user'),
-('David', 'Williams', 'david.williams@sfsu.edu', 'password123', 'user'),
-('Sarah', 'Williams', 'sarah.williams@sfsu.edu', 'password123', 'user'),
-('Robert', 'Brown', 'robert.brown@sfsu.edu', 'password123', 'user'),
-('Jessica', 'Davis', 'jessica.davis@sfsu.edu', 'password123', 'user'),
-('James', 'Miller', 'james.miller@sfsu.edu', 'password123', 'user'),
-('Ashley', 'Wilson', 'ashley.wilson@sfsu.edu', 'password123', 'user'),
-('Christopher', 'Moore', 'chris.moore@sfsu.edu', 'password123', 'user'),
-('Amanda', 'Taylor', 'amanda.taylor@sfsu.edu', 'password123', 'user'),
-('Daniel', 'Anderson', 'daniel.anderson@sfsu.edu', 'password123', 'user'),
-('Jennifer', 'Thomas', 'jennifer.thomas@sfsu.edu', 'password123', 'user'),
-('Matthew', 'Jackson', 'matthew.jackson@sfsu.edu', 'password123', 'user'),
-('Lauren', 'White', 'lauren.white@sfsu.edu', 'password123', 'user'),
-('Andrew', 'Harris', 'andrew.harris@sfsu.edu', 'password123', 'user'),
-('Brittany', 'Martin', 'brittany.martin@sfsu.edu', 'password123', 'user'),
-('Joshua', 'Thompson', 'joshua.thompson@sfsu.edu', 'password123', 'user'),
-('Samantha', 'Garcia', 'samantha.garcia@sfsu.edu', 'password123', 'user'),
-('Kevin', 'Martinez', 'kevin.martinez@sfsu.edu', 'password123', 'user'),
-('Nicole', 'Robinson', 'nicole.robinson@sfsu.edu', 'password123', 'user'),
-('Ryan', 'Clark', 'ryan.clark@sfsu.edu', 'password123', 'user'),
-('Megan', 'Rodriguez', 'megan.rodriguez@sfsu.edu', 'password123', 'user'),
-('Brandon', 'Lewis', 'brandon.lewis@sfsu.edu', 'password123', 'user'),
-('Rachel', 'Lee', 'rachel.lee@sfsu.edu', 'password123', 'user'),
-('Tyler', 'Walker', 'tyler.walker@sfsu.edu', 'password123', 'user'),
-('Stephanie', 'Hall', 'stephanie.hall@sfsu.edu', 'password123', 'user'),
-('Justin', 'Allen', 'justin.allen@sfsu.edu', 'password123', 'user'),
-('Amber', 'Young', 'amber.young@sfsu.edu', 'password123', 'user'),
-('Admin', 'User', 'admin@sfsu.edu', 'admin123', 'admin');
+-- Insert Users
+INSERT INTO User (firstName, lastName, email, password, Type, profilePicture, bio) VALUES
+('John', 'Smith', 'john.smith@sfsu.edu', 'password123', 'user', NULL, 'Experienced data structures tutor with 3 years of teaching experience. Specializing in trees, graphs, and algorithms.'),
+('Jane', 'Smith', 'jane.smith@sfsu.edu', 'password123', 'user', NULL, 'Patient tutor focusing on programming fundamentals. Love helping beginners understand coding concepts!'),
+('Michael', 'Johnson', 'michael.johnson@sfsu.edu', 'password123', 'user', NULL, 'Graduate student specializing in algorithms and data structures. Published researcher with strong teaching background.'),
+('Emily', 'Johnson', 'emily.johnson@sfsu.edu', 'password123', 'user', NULL, 'Math enthusiast helping students conquer calculus. Clear explanations and lots of practice problems!'),
+('David', 'Williams', 'david.williams@sfsu.edu', 'password123', 'user', NULL, 'Discrete math made easy! Proofs, logic, and set theory explained simply.'),
+('Sarah', 'Williams', 'sarah.williams@sfsu.edu', 'password123', 'user', NULL, 'Software engineering professional with industry experience. Agile methodologies and best practices.'),
+('Robert', 'Brown', 'robert.brown@sfsu.edu', 'password123', 'user', NULL, 'Physics tutor covering mechanics, electricity, and magnetism. Problem-solving focused approach.'),
+('Jessica', 'Davis', 'jessica.davis@sfsu.edu', 'password123', 'user', NULL, 'Coding bootcamp graduate turned tutor. I understand the struggles of learning to code!'),
+('James', 'Miller', 'james.miller@sfsu.edu', 'password123', 'user', NULL, 'Computer architecture and organization expert. Assembly language and digital logic specialist.'),
+('Ashley', 'Wilson', 'ashley.wilson@sfsu.edu', 'password123', 'user', NULL, 'AI and machine learning tutor. Making complex concepts accessible to everyone.'),
+('Christopher', 'Moore', 'chris.moore@sfsu.edu', 'password123', 'user', NULL, 'Data structures wizard! Let me help you ace CSC 220 with clear explanations and practice.'),
+('Amanda', 'Taylor', 'amanda.taylor@sfsu.edu', 'password123', 'user', NULL, 'Linear algebra made simple. Matrices, vector spaces, and eigenvalues demystified.'),
+('Daniel', 'Anderson', 'daniel.anderson@sfsu.edu', 'password123', 'user', NULL, 'Network protocols and architecture specialist. TCP/IP, routing, and network security.'),
+('Jennifer', 'Thomas', 'jennifer.thomas@sfsu.edu', 'password123', 'user', NULL, 'Calculus tutor with a passion for teaching. Limits, derivatives, and integrals explained clearly.'),
+('Matthew', 'Jackson', 'matthew.jackson@sfsu.edu', 'password123', 'user', NULL, 'Operating systems tutor covering processes, threads, memory management, and file systems.'),
+('Lauren', 'White', 'lauren.white@sfsu.edu', 'password123', 'user', NULL, 'New tutor excited to help! Strong foundation in programming fundamentals.'),
+('Andrew', 'Harris', 'andrew.harris@sfsu.edu', 'password123', 'user', NULL, 'Programming languages enthusiast. Functional programming, compilers, and language design.'),
+('Brittany', 'Martin', 'brittany.martin@sfsu.edu', 'password123', 'user', NULL, 'Data structures tutor with focus on practical implementation and interview prep.'),
+('Joshua', 'Thompson', 'joshua.thompson@sfsu.edu', 'password123', 'user', NULL, 'Numerical methods and scientific computing. MATLAB and computational mathematics.'),
+('Samantha', 'Garcia', 'samantha.garcia@sfsu.edu', 'password123', 'user', NULL, 'OOP expert! Classes, inheritance, polymorphism, and design patterns made easy.'),
+('Kevin', 'Martinez', 'kevin.martinez@sfsu.edu', 'password123', 'user', NULL, 'Computer organization tutor. CPU design, cache memory, and performance optimization.'),
+('Nicole', 'Robinson', 'nicole.robinson@sfsu.edu', 'password123', 'user', NULL, 'Statistics tutor helping students with probability, distributions, and hypothesis testing.'),
+('Ryan', 'Clark', 'ryan.clark@sfsu.edu', 'password123', 'user', NULL, 'OS concepts simplified. Scheduling algorithms, deadlocks, and synchronization.'),
+('Megan', 'Rodriguez', 'megan.rodriguez@sfsu.edu', 'password123', 'user', NULL, 'Machine learning and neural networks. Theory and practical implementation with Python.'),
+('Brandon', 'Lewis', 'brandon.lewis@sfsu.edu', 'password123', 'user', NULL, 'Logic and proofs specialist. Helping students build strong mathematical reasoning skills.'),
+('Rachel', 'Lee', 'rachel.lee@sfsu.edu', 'password123', 'user', NULL, NULL),
+('Tyler', 'Walker', 'tyler.walker@sfsu.edu', 'password123', 'user', NULL, NULL),
+('Stephanie', 'Hall', 'stephanie.hall@sfsu.edu', 'password123', 'user', NULL, NULL),
+('Justin', 'Allen', 'justin.allen@sfsu.edu', 'password123', 'user', NULL, NULL),
+('Amber', 'Young', 'amber.young@sfsu.edu', 'password123', 'user', NULL, NULL),
+('Admin', 'User', 'admin@sfsu.edu', 'admin123', 'admin', NULL, NULL),
+('Mark', 'Johnson', 'mark.johnson@sfsu.edu', 'password123', 'user', NULL, 'Computer Science student looking for tutoring help.'),
+('Lisa', 'Smith', 'lisa.smith@sfsu.edu', 'password123', 'user', NULL, 'Math major seeking calculus support.'),
+('Tom', 'Williams', 'tom.williams@sfsu.edu', 'password123', 'user', NULL, NULL);
 
 -- Insert Course Tags (SFSU naming)
 INSERT INTO Tags (tags) VALUES
@@ -57,64 +60,93 @@ INSERT INTO Tags (tags) VALUES
 ('MATH 225'), -- 19: Introduction to Linear Algebra
 ('ENGR 305'); -- 20: Linear Systems Analysis (Signals & Systems)
 
--- Insert Tutors with varying ratings (unchanged)
-INSERT INTO Tutor (uid, rating) VALUES
-(1, 4.8),(2, 4.5),(3, 4.9),(4, 4.7),(5, 4.3),(6, 4.6),(7, 4.4),(8, 4.8),
-(9, 4.2),(10, 4.9),(11, 4.5),(12, 4.7),(13, 4.6),(14, 4.8),(15, 4.4),
-(16, 4.9),(17, 4.3),(18, 4.7),(19, 4.5),(20, 4.8),(21, 4.6),(22, 4.4),
-(23, 4.7),(24, 4.9),(25, 4.5);
+-- Insert Tutors with varying ratings, statuses, and verification statuses
+INSERT INTO Tutor (uid, rating, status, verificationStatus) VALUES
+(1, 4.8, 'available', 'approved'),
+(2, 4.5, 'available', 'approved'),
+(3, 4.9, 'busy', 'approved'),
+(4, 4.7, 'available', 'approved'),
+(5, 4.3, 'available', 'approved'),
+(6, 4.6, 'available', 'approved'),
+(7, 4.4, 'away', 'approved'),
+(8, 4.8, 'available', 'approved'),
+(9, 4.2, 'available', 'approved'),
+(10, 4.9, 'available', 'approved'),
+(11, 4.5, 'available', 'approved'),
+(12, 4.7, 'available', 'approved'),
+(13, 4.6, 'available', 'approved'),
+(14, 4.8, 'available', 'approved'),
+(15, 4.4, 'busy', 'approved'),
+(16, 4.9, 'available', 'pending'),
+(17, 4.3, 'available', 'approved'),
+(18, 4.7, 'available', 'approved'),
+(19, 4.5, 'available', 'approved'),
+(20, 4.8, 'available', 'approved'),
+(21, 4.6, 'available', 'approved'),
+(22, 4.4, 'available', 'approved'),
+(23, 4.7, 'available', 'approved'),
+(24, 4.9, 'available', 'approved'),
+(25, 4.5, 'available', 'approved');
 
--- Insert Profiles for tutors (ids reference the SFSU tag ids above; bios unchanged)
-INSERT INTO Profile (uid, tags, status, bio) VALUES
-(1, 3, 'Available', 'Experienced data structures tutor with 3 years of teaching experience. Specializing in trees, graphs, and algorithms.'),
-(1, 1, 'Available', NULL),
-(2, 1, 'Available', 'Patient tutor focusing on programming fundamentals. Love helping beginners understand coding concepts!'),
-(2, 2, 'Available', NULL),
-(3, 3, 'Busy', 'Graduate student specializing in algorithms and data structures. Published researcher with strong teaching background.'),
-(3, 4, 'Busy', NULL),
-(3, 5, 'Busy', NULL),
-(4, 8, 'Available', 'Math enthusiast helping students conquer calculus. Clear explanations and lots of practice problems!'),
-(4, 9, 'Available', NULL),
-(4, 10, 'Available', NULL),
-(5, 7, 'Available', 'Discrete math made easy! Proofs, logic, and set theory explained simply.'),
-(6, 13, 'Available', 'Software engineering professional with industry experience. Agile methodologies and best practices.'),
-(6, 16, 'Available', NULL),
-(7, 11, 'Unavailable', 'Physics tutor covering mechanics, electricity, and magnetism. Problem-solving focused approach.'),
-(7, 12, 'Unavailable', NULL),
-(8, 1, 'Available', 'Coding bootcamp graduate turned tutor. I understand the struggles of learning to code!'),
-(8, 2, 'Available', NULL),
-(8, 3, 'Available', NULL),
-(9, 6, 'Available', 'Computer architecture and organization expert. Assembly language and digital logic specialist.'),
-(10, 15, 'Available', 'AI and machine learning tutor. Making complex concepts accessible to everyone.'),
-(10, 16, 'Available', NULL),
-(11, 3, 'Available', 'Data structures wizard! Let me help you ace CSC 220 with clear explanations and practice.'),
-(12, 19, 'Available', 'Linear algebra made simple. Matrices, vector spaces, and eigenvalues demystified.'),
-(13, 14, 'Available', 'Network protocols and architecture specialist. TCP/IP, routing, and network security.'),
-(14, 8, 'Available', 'Calculus tutor with a passion for teaching. Limits, derivatives, and integrals explained clearly.'),
-(14, 9, 'Available', NULL),
-(15, 5, 'Busy', 'Operating systems tutor covering processes, threads, memory management, and file systems.'),
-(16, 1, 'Available', 'New tutor excited to help! Strong foundation in programming fundamentals.'),
-(16, 18, 'Available', NULL),
-(17, 4, 'Available', 'Programming languages enthusiast. Functional programming, compilers, and language design.'),
-(18, 3, 'Available', 'Data structures tutor with focus on practical implementation and interview prep.'),
-(18, 13, 'Available', NULL),
-(19, 17, 'Available', 'Numerical methods and scientific computing. MATLAB and computational mathematics.'),
-(20, 2, 'Available', 'OOP expert! Classes, inheritance, polymorphism, and design patterns made easy.'),
-(20, 3, 'Available', NULL),
-(21, 6, 'Available', 'Computer organization tutor. CPU design, cache memory, and performance optimization.'),
-(22, 18, 'Available', 'Statistics tutor helping students with probability, distributions, and hypothesis testing.'),
-(23, 5, 'Available', 'OS concepts simplified. Scheduling algorithms, deadlocks, and synchronization.'),
-(24, 15, 'Available', 'Machine learning and neural networks. Theory and practical implementation with Python.'),
-(24, 3, 'Available', NULL),
-(25, 7, 'Available', 'Logic and proofs specialist. Helping students build strong mathematical reasoning skills.');
+-- Insert TutorTags (tutor expertise)
+INSERT INTO TutorTags (tid, tagsID) VALUES
+-- John Smith - Data Structures & Programming
+(1, 3), (1, 1),
+-- Jane Smith - Programming Fundamentals
+(2, 1), (2, 2),
+-- Michael Johnson - Advanced CS
+(3, 3), (3, 4), (3, 5),
+-- Emily Johnson - Calculus
+(4, 8), (4, 9), (4, 10),
+-- David Williams - Discrete Math
+(5, 7),
+-- Sarah Williams - Software Engineering & Databases
+(6, 13), (6, 16),
+-- Robert Brown - Physics
+(7, 11), (7, 12),
+-- Jessica Davis - Programming (Multiple Courses)
+(8, 1), (8, 2), (8, 3),
+-- James Miller - Computer Organization
+(9, 6),
+-- Ashley Wilson - AI & Databases
+(10, 15), (10, 16),
+-- Christopher Moore - Data Structures
+(11, 3),
+-- Amanda Taylor - Linear Algebra
+(12, 19),
+-- Daniel Anderson - Computer Networks
+(13, 14),
+-- Jennifer Thomas - Calculus
+(14, 8), (14, 9),
+-- Matthew Jackson - Operating Systems
+(15, 5),
+-- Lauren White - Programming & Statistics
+(16, 1), (16, 18),
+-- Andrew Harris - Programming Languages
+(17, 4),
+-- Brittany Martin - Data Structures & Software Engineering
+(18, 3), (18, 13),
+-- Joshua Thompson - Numerical Analysis
+(19, 17),
+-- Samantha Garcia - OOP & Data Structures
+(20, 2), (20, 3),
+-- Kevin Martinez - Computer Organization
+(21, 6),
+-- Nicole Robinson - Statistics
+(22, 18),
+-- Ryan Clark - Operating Systems
+(23, 5),
+-- Megan Rodriguez - AI & Data Structures
+(24, 15), (24, 3),
+-- Brandon Lewis - Discrete Math
+(25, 7);
 
 -- Insert Posts for tutors
--- Note: updated any UF course code mentions to SFSU codes (e.g., COP3530 -> CSC 220, COP3502 -> CSC 210)
-INSERT INTO Posts (tid, tags, content, timestamp) VALUES
+INSERT INTO Posts (tid, tagsID, content, timestamp) VALUES
 -- John Smith (tid=1) - Data Structures & Programming
 (1, 3, 'Offering tutoring sessions for CSC 220! I specialize in binary trees, AVL trees, and graph algorithms. Available Mon-Fri evenings.', '2024-11-01 10:00:00'),
 (1, 3, 'New study group forming for midterm prep! Focusing on sorting algorithms and complexity analysis. DM me if interested.', '2024-11-03 14:30:00'),
-(1, 1, 'Beginner-friendly programming sessions available. Let''s work through your CSC 210 assignments together!', '2024-11-05 09:00:00'),
+(1, 1, 'Beginner-friendly programming sessions available. Let us work through your CSC 210 assignments together!', '2024-11-05 09:00:00'),
 
 -- Jane Smith (tid=2) - Programming Fundamentals
 (2, 1, 'Hi everyone! Offering help with loops, conditionals, and functions. Patient explanations guaranteed!', '2024-11-01 11:00:00'),
@@ -123,7 +155,7 @@ INSERT INTO Posts (tid, tags, content, timestamp) VALUES
 
 -- Michael Johnson (tid=3) - Advanced CS
 (3, 3, 'Graduate-level data structures tutoring available. Research experience in algorithm optimization.', '2024-11-01 12:00:00'),
-(3, 4, 'Programming languages concepts: lexical analysis, parsing, and code generation. Let''s dive deep!', '2024-11-02 16:00:00'),
+(3, 4, 'Programming languages concepts: lexical analysis, parsing, and code generation. Let us dive deep!', '2024-11-02 16:00:00'),
 (3, 5, 'OS scheduling algorithms giving you trouble? I can explain FCFS, SJF, Round Robin, and more.', '2024-11-07 10:00:00'),
 
 -- Emily Johnson (tid=4) - Calculus
@@ -133,7 +165,7 @@ INSERT INTO Posts (tid, tags, content, timestamp) VALUES
 
 -- David Williams (tid=5) - Discrete Math
 (5, 7, 'Discrete structures tutoring: mathematical induction, recursion, and combinatorics.', '2024-11-01 14:00:00'),
-(5, 7, 'Struggling with proofs? Let''s work through direct proofs, contradiction, and contraposition.', '2024-11-04 12:00:00'),
+(5, 7, 'Struggling with proofs? Let us work through direct proofs, contradiction, and contraposition.', '2024-11-04 12:00:00'),
 
 -- Sarah Williams (tid=6) - Software Engineering & Databases
 (6, 13, 'Software engineering best practices: Agile, Scrum, and version control with Git.', '2024-11-02 09:00:00'),
@@ -151,7 +183,7 @@ INSERT INTO Posts (tid, tags, content, timestamp) VALUES
 
 -- James Miller (tid=9) - Computer Organization
 (9, 6, 'Computer organization help: assembly language programming and CPU architecture.', '2024-11-02 11:00:00'),
-(9, 6, 'Cache memory and performance optimization. Let''s speed up your code!', '2024-11-05 15:00:00'),
+(9, 6, 'Cache memory and performance optimization. Let us speed up your code!', '2024-11-05 15:00:00'),
 
 -- Ashley Wilson (tid=10) - AI & Databases
 (10, 15, 'Introduction to AI: search algorithms, knowledge representation, and machine learning basics.', '2024-11-01 16:00:00'),
@@ -171,7 +203,7 @@ INSERT INTO Posts (tid, tags, content, timestamp) VALUES
 (13, 14, 'Network security basics: encryption, firewalls, and secure communication.', '2024-11-04 17:00:00'),
 
 -- Jennifer Thomas (tid=14) - Calculus
-(14, 8, 'Struggling with derivatives? Let''s master the chain rule, product rule, and quotient rule!', '2024-11-03 11:00:00'),
+(14, 8, 'Struggling with derivatives? Let us master the chain rule, product rule, and quotient rule!', '2024-11-03 11:00:00'),
 (14, 9, 'Calculus 2 final exam prep! Integration techniques and series convergence.', '2024-11-06 14:00:00'),
 
 -- Matthew Jackson (tid=15) - Operating Systems
@@ -179,7 +211,7 @@ INSERT INTO Posts (tid, tags, content, timestamp) VALUES
 (15, 5, 'Memory management techniques: paging, segmentation, and virtual memory.', '2024-11-05 12:00:00'),
 
 -- Lauren White (tid=16) - Programming & Statistics
-(16, 1, 'New tutor here! Strong foundation in programming. Let''s learn together!', '2024-11-03 12:00:00'),
+(16, 1, 'New tutor here! Strong foundation in programming. Let us learn together!', '2024-11-03 12:00:00'),
 (16, 18, 'Statistics help: probability distributions, confidence intervals, and hypothesis testing.', '2024-11-07 15:00:00'),
 
 -- Andrew Harris (tid=17) - Programming Languages
@@ -219,9 +251,3 @@ INSERT INTO Posts (tid, tags, content, timestamp) VALUES
 -- Brandon Lewis (tid=25) - Discrete Math
 (25, 7, 'Graph theory: paths, cycles, trees, and graph coloring problems.', '2024-11-02 18:00:00'),
 (25, 7, 'Number theory and cryptography basics. Modular arithmetic and RSA algorithm.', '2024-11-06 16:00:00');
-
--- Insert some regular users (non-tutors) for completeness (unchanged)
-INSERT INTO User (firstName, lastName, email, password, Type) VALUES
-('Mark', 'Johnson', 'mark.johnson@sfsu.edu', 'password123', 'user'),
-('Lisa', 'Smith', 'lisa.smith@sfsu.edu', 'password123', 'user'),
-('Tom', 'Williams', 'tom.williams@sfsu.edu', 'password123', 'user');

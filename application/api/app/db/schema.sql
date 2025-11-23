@@ -6,12 +6,14 @@ USE GatorGuides;
 DROP TABLE IF EXISTS User;
 CREATE TABLE User
 (
-    uid       INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
-    firstName VARCHAR(255)                   NOT NULL,
-    lastName  VARCHAR(255)                   NOT NULL,
-    email     VARCHAR(255) UNIQUE            NOT NULL,
-    password  VARCHAR(255)                   NOT NULL,
-    Type      ENUM ('user', 'admin')
+    uid            INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    firstName      VARCHAR(255)                   NOT NULL,
+    lastName       VARCHAR(255)                   NOT NULL,
+    email          VARCHAR(255) UNIQUE            NOT NULL,
+    password       VARCHAR(255)                   NOT NULL,
+    Type           ENUM ('user', 'admin'),
+    profilePicture VARCHAR(255),
+    bio            TEXT
 );
 
 # Lookup table for tags (class name + number)
@@ -21,15 +23,29 @@ CREATE TABLE Tags
     tagsID INT PRIMARY KEY AUTO_INCREMENT,
     tags   VARCHAR(8)
 );
--- Add approval column entry
+
 # Tutor (also a registered user) contains rating and relevant info
 DROP TABLE IF EXISTS Tutor;
 CREATE TABLE Tutor
 (
-    tid    INT PRIMARY KEY AUTO_INCREMENT,
-    uid    INT NOT NULL,
-    rating DOUBLE,
+    tid                INT PRIMARY KEY AUTO_INCREMENT,
+    uid                INT NOT NULL,
+    rating             DOUBLE,
+    status             ENUM ('available', 'away', 'busy')         DEFAULT 'available',
+    verificationStatus ENUM ('unapproved', 'pending', 'approved') DEFAULT 'unapproved',
     FOREIGN KEY (uid) REFERENCES User (uid) ON DELETE CASCADE
+);
+
+--Removes the need to search a tutor's tags via their posts, streamlining the searching process
+DROP TABLE IF EXISTS TutorTags;
+CREATE TABLE TutorTags
+(
+    tutorTagID INT PRIMARY KEY AUTO_INCREMENT,
+    tid        INT NOT NULL,
+    tagsID     INT NOT NULL,
+    FOREIGN KEY (tid) REFERENCES Tutor (tid) ON DELETE CASCADE,
+    FOREIGN KEY (tagsID) REFERENCES Tags (tagsID) ON DELETE CASCADE,
+    UNIQUE KEY (tid, tagsID)
 );
 
 # Posts table contains posts made by tutors and relevant content
@@ -38,24 +54,11 @@ CREATE TABLE Posts
 (
     pid       INT PRIMARY KEY AUTO_INCREMENT,
     tid       INT NOT NULL,
-    tags      INT NOT NULL,
+    tagsID    INT NOT NULL,
     content   TEXT,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (tid) REFERENCES Tutor (tid) ON DELETE CASCADE,
-    FOREIGN KEY (tags) REFERENCES Tags (tagsID) ON DELETE CASCADE
-);
-
-# Profile table contains information to populate profiles
-DROP TABLE IF EXISTS Profile;
-CREATE TABLE Profile
-(
-    profileID INT PRIMARY KEY AUTO_INCREMENT,
-    uid       INT NOT NULL,
-    tags      INT NOT NULL,
-    status    VARCHAR(50),
-    bio       TEXT,
-    FOREIGN KEY (uid) REFERENCES User (uid) ON DELETE CASCADE,
-    FOREIGN KEY (tags) REFERENCES Tags (tagsID) ON DELETE CASCADE
+    FOREIGN KEY (tagsID) REFERENCES Tags (tagsID) ON DELETE CASCADE
 );
 
 # Sessions table holds all past, current, and future tutoring sessions scheduled
@@ -65,21 +68,25 @@ CREATE TABLE Sessions
     sid       INT PRIMARY KEY AUTO_INCREMENT,
     tid       INT,
     uid       INT,
-    tags      INT NOT NULL,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    tagsID    INT NOT NULL,
+    day       ENUM ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'),
+    time      INT CHECK (time >= 1 AND time <= 24),
+    started DATETIME DEFAULT CURRENT_TIMESTAMP,
     concluded DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (tid) REFERENCES Tutor (tid) ON DELETE CASCADE,
     FOREIGN KEY (uid) REFERENCES User (uid) ON DELETE CASCADE,
-    FOREIGN KEY (tags) REFERENCES Tags (tagsID) ON DELETE CASCADE
+    FOREIGN KEY (tagsID) REFERENCES Tags (tagsID) ON DELETE CASCADE
 );
 
 # Generic messages table to populate dms between users and tutors
 DROP TABLE IF EXISTS Messages;
 CREATE TABLE Messages
 (
-    mid       INT PRIMARY KEY AUTO_INCREMENT,
-    uid       INT,
-    content   TEXT NOT NULL,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (uid) REFERENCES User (uid) ON DELETE CASCADE
+    mid         INT PRIMARY KEY AUTO_INCREMENT,
+    senderUID   INT  NOT NULL,
+    receiverUID INT  NOT NULL,
+    content     TEXT NOT NULL,
+    timestamp   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (senderUID) REFERENCES User (uid) ON DELETE CASCADE,
+    FOREIGN KEY (receiverUID) REFERENCES User (uid) ON DELETE CASCADE
 );
