@@ -36,7 +36,7 @@ CREATE TABLE Tutor
     FOREIGN KEY (uid) REFERENCES User (uid) ON DELETE CASCADE
 );
 
---Removes the need to search a tutor's tags via their posts, streamlining the searching process
+# Removes the need to search a tutors tags via their posts, streamlining the searching process
 DROP TABLE IF EXISTS TutorTags;
 CREATE TABLE TutorTags
 (
