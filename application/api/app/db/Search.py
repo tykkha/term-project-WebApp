@@ -1,5 +1,8 @@
 import mysql.connector
 from typing import List, Dict, Any
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Dependency: pip install mysql-connector-python
 
@@ -22,6 +25,7 @@ class GatorGuidesSearch:
             )
             self.cursor = self.connection.cursor(dictionary=True)
         except Exception as e:
+            logger.error(f"Database connection failed: {e}")
             self.connection = None
             self.cursor = None
 
@@ -32,13 +36,15 @@ class GatorGuidesSearch:
             self.connection.reconnect(attempts=3, delay=1)
             self.cursor = self.connection.cursor(dictionary=True)
             return True
-        except Exception:
+        except Exception as e:
+            logger.error(f"Reconnection failed: {e}")
             self.connection = None
             self.cursor = None
             return False
 
     def search(self, query: str) -> List[Dict[str, Any]]:
         if not self._ensure_connection():
+            logger.error("Search failed: database connection unavailable")
             return []
 
         try:
@@ -195,7 +201,8 @@ class GatorGuidesSearch:
 
             return results
 
-        except Exception:
+        except Exception as e:
+            logger.error(f"Search error for query '{query}': {e}", exc_info=True)
             return []
 
     def close(self):
@@ -204,5 +211,5 @@ class GatorGuidesSearch:
                 self.cursor.close()
             if self.connection and self.connection.is_connected():
                 self.connection.close()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Error closing connection: {e}")

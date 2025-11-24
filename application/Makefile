@@ -12,6 +12,9 @@ api-dev:
 web-dev:
 	cd web && npm run dev -- --open
 
+dev:
+	make api-dev & make web-dev
+
 build-web:
 	cd web && npm run build && zip -r build.zip build 
 

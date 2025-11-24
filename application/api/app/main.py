@@ -16,4 +16,4 @@ def read_item(item_id: int, q: Union[str, None] = None):
     return {"item_id": item_id, "q": q}
 
 
-app.include_router(search.router)
+app.include_router(search.router, prefix="/api")
