@@ -49,24 +49,40 @@ class GatorGuidesSearch:
 
         try:
             results = []
-
-            tag_search_query = """
-                SELECT 
-                    p.pid, p.tid, p.content, p.timestamp,
-                    t.rating, t.status,
-                    u.firstName, u.lastName, u.email, u.bio,
-                    tg.tags as post_tag
-                FROM Posts p
-                INNER JOIN Tags tg ON p.tagsID = tg.tagsID
-                INNER JOIN Tutor t ON p.tid = t.tid
-                INNER JOIN User u ON t.uid = u.uid
-                WHERE tg.tags LIKE %s
-                AND t.verificationStatus = 'approved'
-                ORDER BY t.rating DESC, p.timestamp DESC
-            """
-
-            self.cursor.execute(tag_search_query, (f'%{query}%',))
-            posts_by_tag = self.cursor.fetchall()
+            
+            if not query or query.strip() == '':
+                all_tutors_query = """
+                    SELECT 
+                        p.pid, p.tid, p.content, p.timestamp,
+                        t.rating, t.status,
+                        u.firstName, u.lastName, u.email, u.bio,
+                        tg.tags as post_tag
+                    FROM Posts p
+                    INNER JOIN Tags tg ON p.tagsID = tg.tagsID
+                    INNER JOIN Tutor t ON p.tid = t.tid
+                    INNER JOIN User u ON t.uid = u.uid
+                    WHERE t.verificationStatus = 'approved'
+                    ORDER BY t.rating DESC, p.timestamp DESC
+                """
+                self.cursor.execute(all_tutors_query)
+                posts_by_tag = self.cursor.fetchall()
+            else:
+                tag_search_query = """
+                    SELECT 
+                        p.pid, p.tid, p.content, p.timestamp,
+                        t.rating, t.status,
+                        u.firstName, u.lastName, u.email, u.bio,
+                        tg.tags as post_tag
+                    FROM Posts p
+                    INNER JOIN Tags tg ON p.tagsID = tg.tagsID
+                    INNER JOIN Tutor t ON p.tid = t.tid
+                    INNER JOIN User u ON t.uid = u.uid
+                    WHERE tg.tags LIKE %s
+                    AND t.verificationStatus = 'approved'
+                    ORDER BY t.rating DESC, p.timestamp DESC
+                """
+                self.cursor.execute(tag_search_query, (f'%{query}%',))
+                posts_by_tag = self.cursor.fetchall()
 
             unique_tids = set()
             tag_tutor_data = {}
@@ -117,6 +133,9 @@ class GatorGuidesSearch:
             for data in tag_tutor_data.values():
                 data['courses'] = list(data['courses'])
                 results.append(data)
+
+            if not query or query.strip() == '':
+                return results
 
             name_search_query = """
                 SELECT DISTINCT
