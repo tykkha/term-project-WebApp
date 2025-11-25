@@ -70,9 +70,9 @@ CREATE TABLE Sessions
     uid       INT,
     tagsID    INT NOT NULL,
     day       ENUM ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'),
-    time      INT CHECK (time >= 1 AND time <= 24),
-    started DATETIME DEFAULT CURRENT_TIMESTAMP,
-    concluded DATETIME DEFAULT CURRENT_TIMESTAMP,
+    time      INT CHECK (time >= 0 AND time <= 23),
+    started DATETIME DEFAULT NULL,
+    concluded DATETIME DEFAULT NULL,
     FOREIGN KEY (tid) REFERENCES Tutor (tid) ON DELETE CASCADE,
     FOREIGN KEY (uid) REFERENCES User (uid) ON DELETE CASCADE,
     FOREIGN KEY (tagsID) REFERENCES Tags (tagsID) ON DELETE CASCADE

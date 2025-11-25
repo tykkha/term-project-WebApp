@@ -1,7 +1,7 @@
 from typing import Union
 
 from fastapi import FastAPI
-from routes import search  # Changed from app.routes to routes
+from routes import search, sessions  # Changed from app.routes to routes
 
 app = FastAPI(title="GatorGuides API")
 
@@ -17,3 +17,4 @@ def read_item(item_id: int, q: Union[str, None] = None):
 
 
 app.include_router(search.router, prefix="/api")
+app.include_router(sessions.router, prefix="/api")
