@@ -10,7 +10,7 @@ class GatorGuidesSearch:
         try:
             host_parts = host.split(':')
             db_host = host_parts[0]
-            db_port = int(host_parts[1]) if len(host_parts) > 1 else 3663
+            db_port = int(host_parts[1]) if len(host_parts) > 1 else 3306
 
             self.connection = mysql.connector.connect(
                 host=db_host,
