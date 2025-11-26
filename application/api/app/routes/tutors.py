@@ -78,6 +78,17 @@ async def get_tutor(tid: int, tutors_mgr: GatorGuidesTutors = Depends(get_tutors
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Returns top 10 tutors based on ratings 
+@router.get("/tutors/top", response_model=List[Dict[str, Any]])
+async def get_top_tutors(search_db: GatorGuidesTutors = Depends(get_tutors_manager)):
+    try:
+        results = search_db.get_top_tutors(limit=10)
+        return results
+    except Exception as e:
+        logger.error(f"Top tutors error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Change tutor verification status
 @router.put("/tutors/{tid}/verification", response_model=Dict[str, Any])
 async def update_verification(tid: int, request: UpdateVerificationRequest, tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
