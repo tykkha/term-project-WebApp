@@ -119,12 +119,12 @@ class GatorGuidesUsers:
             user = self.cursor.fetchone()
 
             if not user:
-                logger.warning(f"Authentication failed: user not found for email {email}")
+                logger.warning(f"Authentication failed: user not found")
                 return None
 
             # Verify password
             if not self._verify_password(password, user['password']):
-                logger.warning(f"Authentication failed: invalid password for email {email}")
+                logger.warning(f"Authentication failed: invalid password")
                 return None
 
             # Return user info
