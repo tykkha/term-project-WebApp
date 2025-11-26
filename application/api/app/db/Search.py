@@ -1,10 +1,9 @@
 import mysql.connector
 from typing import List, Dict, Any
 import logging
+# Dependency: pip install mysql-connector-python
 
 logger = logging.getLogger(__name__)
-
-# Dependency: pip install mysql-connector-python
 
 class GatorGuidesSearch:
     def __init__(self, host: str, database: str, user: str, password: str):
@@ -49,7 +48,7 @@ class GatorGuidesSearch:
 
         try:
             results = []
-            
+
             if not query or query.strip() == '':
                 all_tutors_query = """
                     SELECT 
@@ -222,6 +221,50 @@ class GatorGuidesSearch:
 
         except Exception as e:
             logger.error(f"Search error for query '{query}': {e}", exc_info=True)
+            return []
+
+    def get_top_tutors(self, limit: int = 10) -> List[Dict[str, Any]]:
+        if not self._ensure_connection():
+            logger.error("Get top tutors failed: database connection unavailable")
+            return []
+
+        try:
+            query = """
+                SELECT DISTINCT
+                    t.tid,
+                    u.firstName,
+                    u.lastName,
+                    u.email,
+                    u.bio,
+                    t.rating,
+                    t.status
+                FROM Tutor t
+                INNER JOIN User u ON t.uid = u.uid
+                INNER JOIN Posts p ON t.tid = p.tid
+                WHERE t.verificationStatus = 'approved'
+                GROUP BY t.tid
+                ORDER BY t.rating DESC
+                LIMIT %s
+            """
+            
+            self.cursor.execute(query, (limit,))
+            tutors = self.cursor.fetchall()
+            
+            results = []
+            for tutor in tutors:
+                results.append({
+                    'tid': tutor['tid'],
+                    'name': f"{tutor['firstName']} {tutor['lastName']}",
+                    'email': tutor['email'],
+                    'bio': tutor['bio'],
+                    'rating': tutor['rating'],
+                    'status': tutor['status']
+                })
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"Get top tutors error: {e}", exc_info=True)
             return []
 
     def close(self):

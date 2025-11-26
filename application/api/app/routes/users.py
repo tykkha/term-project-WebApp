@@ -1,0 +1,162 @@
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field, field_validator
+from typing import Optional, Dict, Any
+import re
+from db.Users import GatorGuidesUsers
+from core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
+router = APIRouter()
+users_instance = None
+
+
+class RegisterRequest(BaseModel):
+    firstName: str = Field(..., min_length=1, max_length=255)
+    lastName: str = Field(..., min_length=1, max_length=255)
+    email: str
+    password: str = Field(..., min_length=8, description="Password must be at least 8 characters")
+    profilePicture: Optional[str] = None
+    bio: Optional[str] = None
+    
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v):
+        # Simple email validation
+        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(pattern, v):
+            raise ValueError('Invalid email format')
+        return v.lower()
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+    
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v):
+        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(pattern, v):
+            raise ValueError('Invalid email format')
+        return v.lower()
+
+
+class UpdateUserRequest(BaseModel):
+    firstName: Optional[str] = Field(None, min_length=1, max_length=255)
+    lastName: Optional[str] = Field(None, min_length=1, max_length=255)
+    profilePicture: Optional[str] = None
+    bio: Optional[str] = None
+
+
+def get_users_manager():
+    global users_instance
+    if not users_instance:
+        users_instance = GatorGuidesUsers(
+            host=settings.DATABASE_HOST,
+            database=settings.DATABASE_NAME,
+            user=settings.DATABASE_USER,
+            password=settings.DATABASE_PASSWORD
+        )
+    return users_instance
+
+
+# Register a new user
+@router.post("/register", response_model=Dict[str, Any])
+async def register_user(request: RegisterRequest, users_mgr: GatorGuidesUsers = Depends(get_users_manager)):
+    try:
+        user = users_mgr.create_user(
+            first_name=request.firstName,
+            last_name=request.lastName,
+            email=request.email,
+            password=request.password,
+            user_type='user',
+            profile_picture=request.profilePicture,
+            bio=request.bio
+        )
+        
+        if user:
+            logger.info(f"User registered: {user['email']}")
+            return {
+                "message": "User registered successfully",
+                "user": user
+            }
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Registration failed. Email may already be in use."
+            )
+            
+    except Exception as e:
+        logger.error(f"Registration error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Login user
+@router.post("/login", response_model=Dict[str, Any])
+async def login_user(request: LoginRequest, users_mgr: GatorGuidesUsers = Depends(get_users_manager)):
+    try:
+        user = users_mgr.authenticate_user(request.email, request.password)
+        
+        if user:
+            logger.info(f"User logged in: {user['email']}")
+            return {
+                "message": "Login successful",
+                "user": user
+            }
+        else:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid email or password"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Get user by ID
+@router.get("/users/{uid}", response_model=Dict[str, Any])
+async def get_user(uid: int, users_mgr: GatorGuidesUsers = Depends(get_users_manager)):
+    try:
+        user = users_mgr.get_user(uid)
+        
+        if user:
+            return user
+        else:
+            raise HTTPException(status_code=404, detail="User not found")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get user error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Update user information
+@router.put("/users/{uid}", response_model=Dict[str, Any])
+async def update_user(uid: int, request: UpdateUserRequest, users_mgr: GatorGuidesUsers = Depends(get_users_manager)):
+    try:
+        success = users_mgr.update_user(
+            uid=uid,
+            first_name=request.firstName,
+            last_name=request.lastName,
+            profile_picture=request.profilePicture,
+            bio=request.bio
+        )
+        
+        if success:
+            return {"message": "User updated successfully"}
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Update failed. User may not exist or no fields were changed."
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Update user error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
