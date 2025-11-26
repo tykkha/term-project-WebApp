@@ -48,7 +48,7 @@ class GatorGuidesSearch:
 
         try:
             results = []
-
+            
             if not query or query.strip() == '':
                 all_tutors_query = """
                     SELECT 

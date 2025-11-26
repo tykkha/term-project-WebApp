@@ -29,7 +29,8 @@ def get_session_manager():
         )
     return session_manager_instance
 
-# Creates new tutoring session
+
+# Creates a new tutoring session
 @router.post("/sessions", response_model=Dict[str, Any])
 async def create_session(request: CreateSessionRequest, session_mgr: GatorGuidesSessions = Depends(get_session_manager)):
     try:
@@ -51,7 +52,8 @@ async def create_session(request: CreateSessionRequest, session_mgr: GatorGuides
         logger.error(f"Create session error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-# Gets session info by session ID
+
+# Selects a session by its session ID
 @router.get("/sessions/{session_id}", response_model=Dict[str, Any])
 async def get_session(session_id: int, session_mgr: GatorGuidesSessions = Depends(get_session_manager)):
     try:
@@ -68,7 +70,8 @@ async def get_session(session_id: int, session_mgr: GatorGuidesSessions = Depend
         logger.error(f"Get session error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-# Marks session as started with timestamp
+
+# Adds timestamp to mark session has started
 @router.put("/sessions/{session_id}/start")
 async def start_session(session_id: int, session_mgr: GatorGuidesSessions = Depends(get_session_manager)):
     try:
@@ -88,7 +91,8 @@ async def start_session(session_id: int, session_mgr: GatorGuidesSessions = Depe
         logger.error(f"Start session error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-# Marks session as ended with timestamp
+
+# Adds timestamp to mark session has ended
 @router.put("/sessions/{session_id}/end")
 async def end_session(session_id: int, session_mgr: GatorGuidesSessions = Depends(get_session_manager)):
     try:
@@ -108,7 +112,8 @@ async def end_session(session_id: int, session_mgr: GatorGuidesSessions = Depend
         logger.error(f"End session error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-# Gets all sessions for a specific user
+
+# Gets all sessions for a specific student
 @router.get("/users/{uid}/sessions", response_model=List[Dict[str, Any]])
 async def get_user_sessions(uid: int, session_mgr: GatorGuidesSessions = Depends(get_session_manager)):
     try:
@@ -118,6 +123,7 @@ async def get_user_sessions(uid: int, session_mgr: GatorGuidesSessions = Depends
     except Exception as e:
         logger.error(f"Get user sessions error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Gets all sessions for a specific tutor
 @router.get("/tutors/{tid}/sessions", response_model=List[Dict[str, Any]])

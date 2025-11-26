@@ -30,8 +30,8 @@ async def search(query: str, search_db: GatorGuidesSearch = Depends(get_search))
     except Exception as e:
         logger.error(f"Search error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-    
-# Gets top tutors based on ratings
+
+# Returns top 10 tutors based on ratings 
 @router.get("/tutors/top", response_model=List[Dict[str, Any]])
 async def get_top_tutors(search_db: GatorGuidesSearch = Depends(get_search)):
     try:
@@ -39,4 +39,20 @@ async def get_top_tutors(search_db: GatorGuidesSearch = Depends(get_search)):
         return results
     except Exception as e:
         logger.error(f"Top tutors error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Returns all available courses in the database
+@router.get("/tags", response_model=List[Dict[str, Any]])
+async def get_all_tags(search_db: GatorGuidesSearch = Depends(get_search)):
+    try:
+        if not search_db._ensure_connection():
+            raise HTTPException(status_code=500, detail="Database connection failed")
+        
+        query = "SELECT tagsID, tags FROM Tags ORDER BY tags"
+        search_db.cursor.execute(query)
+        tags = search_db.cursor.fetchall()
+        
+        return [{"id": tag["tagsID"], "name": tag["tags"]} for tag in tags]
+    except Exception as e:
+        logger.error(f"Get tags error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
