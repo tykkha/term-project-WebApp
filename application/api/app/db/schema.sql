@@ -90,3 +90,15 @@ CREATE TABLE Messages
     FOREIGN KEY (senderUID) REFERENCES User (uid) ON DELETE CASCADE,
     FOREIGN KEY (receiverUID) REFERENCES User (uid) ON DELETE CASCADE
 );
+
+# Login Sessions table for authentication
+DROP TABLE IF EXISTS LoginSessions;
+CREATE TABLE LoginSessions
+(
+    sessionID  VARCHAR(64) PRIMARY KEY,
+    uid        INT NOT NULL,
+    createdAt  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expiresAt  DATETIME NOT NULL,
+    FOREIGN KEY (uid) REFERENCES User (uid) ON DELETE CASCADE,
+    INDEX idx_session_expiry (expiresAt)
+);

@@ -1,10 +1,69 @@
 from typing import Union
-
 from fastapi import FastAPI
-from routes import search, sessions, users, tutors, messages  # Changed from app.routes to routes
+from fastapi.middleware.cors import CORSMiddleware
+from routes import search, sessions, users, tutors, messages # Changed from app.routes to routes
+from db.Auth import GatorGuidesAuth
+from core.config import settings
+import logging
+from contextlib import asynccontextmanager
+import asyncio
+
+logger = logging.getLogger(__name__)
+
+# Global auth instance for cleanup
+auth_cleanup_instance = None
 
 
-app = FastAPI(title="GatorGuides API")
+async def cleanup_sessions_task():
+    global auth_cleanup_instance
+    
+    while True:
+        try:
+            await asyncio.sleep(14400)
+            
+            if not auth_cleanup_instance:
+                auth_cleanup_instance = GatorGuidesAuth(
+                    host=settings.DATABASE_HOST,
+                    database=settings.DATABASE_NAME,
+                    user=settings.DATABASE_USER,
+                    password=settings.DATABASE_PASSWORD
+                )
+            
+            count = auth_cleanup_instance.cleanup_expired_sessions()
+            logger.info(f"Cleaned up {count} expired sessions")
+            
+        except Exception as e:
+            logger.error(f"Session cleanup error: {e}", exc_info=True)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("Starting GatorGuides API...")
+    
+    # Start cleanup task
+    cleanup_task = asyncio.create_task(cleanup_sessions_task())
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down GatorGuides API...")
+    cleanup_task.cancel()
+    
+    # Close auth connection
+    if auth_cleanup_instance:
+        auth_cleanup_instance.close()
+
+
+app = FastAPI(title="GatorGuides API", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")

@@ -1,14 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Dict, Any
 import re
 from db.Users import GatorGuidesUsers
+from db.Auth import GatorGuidesAuth
 from core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 users_instance = None
+auth_instance = None
 
 
 class RegisterRequest(BaseModel):
@@ -42,6 +44,10 @@ class LoginRequest(BaseModel):
         return v.lower()
 
 
+class LogoutRequest(BaseModel):
+    sessionID: str = Field(..., description="Session ID to logout")
+
+
 class UpdateUserRequest(BaseModel):
     firstName: Optional[str] = Field(None, min_length=1, max_length=255)
     lastName: Optional[str] = Field(None, min_length=1, max_length=255)
@@ -59,6 +65,35 @@ def get_users_manager():
             password=settings.DATABASE_PASSWORD
         )
     return users_instance
+
+
+def get_auth_manager():
+    global auth_instance
+    if not auth_instance:
+        auth_instance = GatorGuidesAuth(
+            host=settings.DATABASE_HOST,
+            database=settings.DATABASE_NAME,
+            user=settings.DATABASE_USER,
+            password=settings.DATABASE_PASSWORD
+        )
+    return auth_instance
+
+
+async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGuidesAuth = Depends(get_auth_manager)) -> int:
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # "Bearer <sessionID>"
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authentication format")
+    
+    session_id = authorization.replace("Bearer ", "")
+    uid = auth_mgr.validate_session(session_id)
+    
+    if not uid:
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    
+    return uid
 
 
 # Register a new user
@@ -94,26 +129,50 @@ async def register_user(request: RegisterRequest, users_mgr: GatorGuidesUsers = 
 
 # Login user
 @router.post("/login", response_model=Dict[str, Any])
-async def login_user(request: LoginRequest, users_mgr: GatorGuidesUsers = Depends(get_users_manager)):
+async def login_user(request: LoginRequest, users_mgr: GatorGuidesUsers = Depends(get_users_manager), auth_mgr: GatorGuidesAuth = Depends(get_auth_manager)):
     try:
         user = users_mgr.authenticate_user(request.email, request.password)
         
-        if user:
-            logger.info(f"User logged in: {user['email']}")
-            return {
-                "message": "Login successful",
-                "user": user
-            }
-        else:
+        if not user:
             raise HTTPException(
                 status_code=401,
                 detail="Invalid email or password"
             )
+        
+        # Create session
+        session_id = auth_mgr.create_session(user['uid'])
+        
+        if not session_id:
+            raise HTTPException(status_code=500, detail="Failed to create session")
+        
+        logger.info(f"User logged in: {user['email']}")
+        return {
+            "message": "Login successful",
+            "user": user,
+            "sessionID": session_id
+        }
             
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Login error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Logout user
+@router.post("/logout", response_model=Dict[str, Any])
+async def logout_user(request: LogoutRequest, auth_mgr: GatorGuidesAuth = Depends(get_auth_manager)):
+    try:
+        success = auth_mgr.delete_session(request.sessionID)
+        
+        if success:
+            logger.info("User logged out successfully")
+            return {"message": "Logout successful"}
+        else:
+            return {"message": "Logout successful"}
+            
+    except Exception as e:
+        logger.error(f"Logout error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -137,8 +196,19 @@ async def get_user(uid: int, users_mgr: GatorGuidesUsers = Depends(get_users_man
 
 # Update user information
 @router.put("/users/{uid}", response_model=Dict[str, Any])
-async def update_user(uid: int, request: UpdateUserRequest, users_mgr: GatorGuidesUsers = Depends(get_users_manager)):
+async def update_user(
+    uid: int,
+    request: UpdateUserRequest,
+    current_user: int = Depends(get_current_user),
+    users_mgr: GatorGuidesUsers = Depends(get_users_manager)
+):
     try:
+        if current_user != uid:
+            raise HTTPException(
+                status_code=403,
+                detail="You can only update your own profile"
+            )
+        
         success = users_mgr.update_user(
             uid=uid,
             first_name=request.firstName,

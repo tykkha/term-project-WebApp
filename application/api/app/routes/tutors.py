@@ -1,13 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any
 from db.Tutors import GatorGuidesTutors
+from db.Users import GatorGuidesUsers
+from db.Auth import GatorGuidesAuth
 from core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 tutors_instance = None
+users_instance = None
+auth_instance = None
 
 
 class CreateTutorRequest(BaseModel):
@@ -36,27 +40,66 @@ def get_tutors_manager():
     return tutors_instance
 
 
-# Create a tutor from existing user
-@router.post("/tutors", response_model=Dict[str, Any])
-async def create_tutor(request: CreateTutorRequest, tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
-    try:
-        tutor = tutors_mgr.create_tutor(
-            uid=request.uid,
-            rating=request.rating,
-            status=request.status
+def get_users_manager():
+    global users_instance
+    if not users_instance:
+        users_instance = GatorGuidesUsers(
+            host=settings.DATABASE_HOST,
+            database=settings.DATABASE_NAME,
+            user=settings.DATABASE_USER,
+            password=settings.DATABASE_PASSWORD
         )
-        
-        if tutor:
-            logger.info(f"Tutor created: tid={tutor['tid']}, uid={tutor['uid']}")
-            return tutor
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail="Failed to create tutor. User may not exist or is already a tutor."
-            )
-            
+    return users_instance
+
+
+def get_auth_manager():
+    global auth_instance
+    if not auth_instance:
+        auth_instance = GatorGuidesAuth(
+            host=settings.DATABASE_HOST,
+            database=settings.DATABASE_NAME,
+            user=settings.DATABASE_USER,
+            password=settings.DATABASE_PASSWORD
+        )
+    return auth_instance
+
+
+async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGuidesAuth = Depends(get_auth_manager)) -> int:
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authentication format")
+    
+    session_id = authorization.replace("Bearer ", "")
+    uid = auth_mgr.validate_session(session_id)
+    
+    if not uid:
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    
+    return uid
+
+
+async def get_current_admin(current_user: int = Depends(get_current_user), users_mgr: GatorGuidesUsers = Depends(get_users_manager)) -> int:
+    user = users_mgr.get_user(current_user)
+    
+    if not user or user['type'] != 'admin':
+        raise HTTPException(
+            status_code=403,
+            detail="Admin access required"
+        )
+    
+    return current_user
+
+
+# Returns top 10 tutors based on ratings
+@router.get("/tutors/top", response_model=List[Dict[str, Any]])
+async def get_top_tutors(tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
+    try:
+        results = tutors_mgr.get_top_tutors(limit=10)
+        return results
     except Exception as e:
-        logger.error(f"Create tutor error: {str(e)}", exc_info=True)
+        logger.error(f"Top tutors error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -78,24 +121,46 @@ async def get_tutor(tid: int, tutors_mgr: GatorGuidesTutors = Depends(get_tutors
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Returns top 10 tutors based on ratings 
-@router.get("/tutors/top", response_model=List[Dict[str, Any]])
-async def get_top_tutors(search_db: GatorGuidesTutors = Depends(get_tutors_manager)):
+# Create a tutor from existing user
+@router.post("/tutors", response_model=Dict[str, Any])
+async def create_tutor(request: CreateTutorRequest, current_user: int = Depends(get_current_user), tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
     try:
-        results = search_db.get_top_tutors(limit=10)
-        return results
+        if current_user != request.uid:
+            raise HTTPException(
+                status_code=403,
+                detail="You can only create a tutor profile for yourself"
+            )
+        
+        tutor = tutors_mgr.create_tutor(
+            uid=request.uid,
+            rating=request.rating,
+            status=request.status
+        )
+        
+        if tutor:
+            logger.info(f"Tutor created: tid={tutor['tid']}, uid={tutor['uid']}")
+            return tutor
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Failed to create tutor. User may not exist or is already a tutor."
+            )
+            
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Top tutors error: {str(e)}", exc_info=True)
+        logger.error(f"Create tutor error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # Change tutor verification status
 @router.put("/tutors/{tid}/verification", response_model=Dict[str, Any])
-async def update_verification(tid: int, request: UpdateVerificationRequest, tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
+async def update_verification(tid: int, request: UpdateVerificationRequest, current_admin: int = Depends(get_current_admin), tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
     try:
         success = tutors_mgr.update_verification_status(tid, request.status)
         
         if success:
+            logger.info(f"Admin {current_admin} updated tutor {tid} verification to {request.status}")
             return {
                 "message": f"Verification status updated to '{request.status}'",
                 "tid": tid
@@ -115,8 +180,18 @@ async def update_verification(tid: int, request: UpdateVerificationRequest, tuto
 
 # Add expertise tags to tutor
 @router.post("/tutors/{tid}/tags", response_model=Dict[str, Any])
-async def add_tutor_tags(tid: int, request: AddTagsRequest, tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
+async def add_tutor_tags(tid: int, request: AddTagsRequest, current_user: int = Depends(get_current_user), tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
     try:
+        tutor = tutors_mgr.get_tutor(tid)
+        if not tutor:
+            raise HTTPException(status_code=404, detail="Tutor not found")
+        
+        if current_user != tutor['uid']:
+            raise HTTPException(
+                status_code=403,
+                detail="You can only add tags to your own tutor profile"
+            )
+        
         success = tutors_mgr.add_tutor_tags(tid, request.tagIds)
         
         if success:

@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Header
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any
 from db.Messages import GatorGuidesMessages
+from db.Auth import GatorGuidesAuth
 from core.config import settings
 import logging
 import json
@@ -9,6 +10,7 @@ import json
 logger = logging.getLogger(__name__)
 router = APIRouter()
 messages_instance = None
+auth_instance = None
 
 
 class SendMessageRequest(BaseModel):
@@ -62,15 +64,51 @@ def get_messages_manager():
     return messages_instance
 
 
+def get_auth_manager():
+    global auth_instance
+    if not auth_instance:
+        auth_instance = GatorGuidesAuth(
+            host=settings.DATABASE_HOST,
+            database=settings.DATABASE_NAME,
+            user=settings.DATABASE_USER,
+            password=settings.DATABASE_PASSWORD
+        )
+    return auth_instance
+
+
+async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGuidesAuth = Depends(get_auth_manager)) -> int:
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authentication format")
+    
+    session_id = authorization.replace("Bearer ", "")
+    uid = auth_mgr.validate_session(session_id)
+    
+    if not uid:
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    
+    return uid
+
+
 # Check if session has been scheduled between tutor and user
 @router.get("/messages/can-message/{uid1}/{uid2}")
-async def check_messaging_allowed(uid1: int, uid2: int, messages_mgr: GatorGuidesMessages = Depends(get_messages_manager)):
+async def check_messaging_allowed(uid1: int, uid2: int, current_user: int = Depends(get_current_user), messages_mgr: GatorGuidesMessages = Depends(get_messages_manager)):
     try:
+        if current_user not in [uid1, uid2]:
+            raise HTTPException(
+                status_code=403,
+                detail="You can only check messaging status for yourself"
+            )
+        
         allowed = messages_mgr.can_message(uid1, uid2)
         return {
             "allowed": allowed,
             "message": "Messaging allowed" if allowed else "Must have a scheduled session to message"
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Check messaging error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -78,8 +116,14 @@ async def check_messaging_allowed(uid1: int, uid2: int, messages_mgr: GatorGuide
 
 # Send a message
 @router.post("/messages", response_model=Dict[str, Any])
-async def send_message(request: SendMessageRequest, messages_mgr: GatorGuidesMessages = Depends(get_messages_manager)):
+async def send_message(request: SendMessageRequest, current_user: int = Depends(get_current_user), messages_mgr: GatorGuidesMessages = Depends(get_messages_manager)):
     try:
+        if current_user != request.senderUID:
+            raise HTTPException(
+                status_code=403,
+                detail="You can only send messages as yourself"
+            )
+        
         # Check if messaging is allowed
         if not messages_mgr.can_message(request.senderUID, request.receiverUID):
             raise HTTPException(
@@ -111,10 +155,18 @@ async def send_message(request: SendMessageRequest, messages_mgr: GatorGuidesMes
 
 # Get conversation between two users
 @router.get("/messages/{uid1}/{uid2}", response_model=List[Dict[str, Any]])
-async def get_conversation(uid1: int, uid2: int, limit: int = 50, offset: int = 0, messages_mgr: GatorGuidesMessages = Depends(get_messages_manager)):
+async def get_conversation(uid1: int, uid2: int, limit: int = 50, offset: int = 0, current_user: int = Depends(get_current_user), messages_mgr: GatorGuidesMessages = Depends(get_messages_manager)):
     try:
+        if current_user not in [uid1, uid2]:
+            raise HTTPException(
+                status_code=403,
+                detail="You can only view your own conversations"
+            )
+        
         messages = messages_mgr.get_conversation(uid1, uid2, limit, offset)
         return messages
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Get conversation error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -122,18 +174,33 @@ async def get_conversation(uid1: int, uid2: int, limit: int = 50, offset: int = 
 
 # Get message history for recent conversations
 @router.get("/users/{uid}/conversations", response_model=List[Dict[str, Any]])
-async def get_recent_conversations(uid: int, limit: int = 20, messages_mgr: GatorGuidesMessages = Depends(get_messages_manager)):
+async def get_recent_conversations(uid: int, limit: int = 20, current_user: int = Depends(get_current_user), messages_mgr: GatorGuidesMessages = Depends(get_messages_manager)):
     try:
+        if current_user != uid:
+            raise HTTPException(
+                status_code=403,
+                detail="You can only view your own conversations"
+            )
+        
         conversations = messages_mgr.get_recent_conversations(uid, limit)
         return conversations
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Get conversations error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# WebSocket endpoint for real-time messaging
+# WebSocket endpoint
 @router.websocket("/ws/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: int):
+async def websocket_endpoint(websocket: WebSocket, user_id: int, token: str = None):
+    if token:
+        auth_mgr = get_auth_manager()
+        validated_uid = auth_mgr.validate_session(token)
+        if not validated_uid or validated_uid != user_id:
+            await websocket.close(code=1008, reason="Authentication failed")
+            return
+    
     await manager.connect(user_id, websocket)
     
     try:
