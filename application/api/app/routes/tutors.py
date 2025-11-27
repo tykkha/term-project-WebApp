@@ -103,7 +103,7 @@ async def get_top_tutors(tutors_mgr: GatorGuidesTutors = Depends(get_tutors_mana
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Get tutor by ID
+# Get tutor by tutor ID
 @router.get("/tutors/{tid}", response_model=Dict[str, Any])
 async def get_tutor(tid: int, tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
     try:
@@ -120,6 +120,22 @@ async def get_tutor(tid: int, tutors_mgr: GatorGuidesTutors = Depends(get_tutors
         logger.error(f"Get tutor error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
+# Get tutor by user ID
+@router.get("/tutors/by-user/{uid}", response_model=Dict[str, Any])
+async def get_tutor_by_user_id(uid: int, tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
+    try:
+        tutor = tutors_mgr.get_tutor_by_uid(uid)
+        
+        if tutor:
+            return tutor
+        else:
+            raise HTTPException(status_code=404, detail="Tutor not found for this user")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get tutor by uid error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Create a tutor from existing user
 @router.post("/tutors", response_model=Dict[str, Any])

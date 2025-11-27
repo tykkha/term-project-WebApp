@@ -200,7 +200,42 @@ class GatorGuidesTutors:
         except Exception as e:
             logger.error(f"Get tutor error: {e}", exc_info=True)
             return None
-        
+
+    def get_tutor_by_uid(self, uid: int) -> Optional[Dict[str, Any]]:
+        if not self._ensure_connection():
+            logger.error("Get tutor by uid failed: database connection unavailable")
+            return None
+
+        try:
+            query = """
+                SELECT 
+                    t.tid, t.uid, t.rating, t.status, t.verificationStatus,
+                    u.firstName, u.lastName, u.email
+                FROM Tutor t
+                INNER JOIN User u ON t.uid = u.uid
+                WHERE t.uid = %s
+            """
+            
+            self.cursor.execute(query, (uid,))
+            tutor = self.cursor.fetchone()
+
+            if tutor:
+                return {
+                    'tid': tutor['tid'],
+                    'uid': tutor['uid'],
+                    'name': f"{tutor['firstName']} {tutor['lastName']}",
+                    'email': tutor['email'],
+                    'rating': tutor['rating'],
+                    'status': tutor['status'],
+                    'verificationStatus': tutor['verificationStatus']
+                }
+            
+            return None
+
+        except Exception as e:
+            logger.error(f"Get tutor by uid error: {e}", exc_info=True)
+            return None
+
     def get_top_tutors(self, limit: int = 10) -> List[Dict[str, Any]]:
         if not self._ensure_connection():
             logger.error("Get top tutors failed: database connection unavailable")
