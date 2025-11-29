@@ -5,7 +5,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class GatorGuidesSessions:
     def __init__(self, host: str, database: str, user: str, password: str):
         try:
@@ -42,14 +41,7 @@ class GatorGuidesSessions:
             self.cursor = None
             return False
 
-    def create_session(
-        self,
-        uid: int,
-        tid: int,
-        tags_id: int,
-        day: str,
-        time: int
-    ) -> Optional[Dict[str, Any]]:
+    def create_session(self, uid: int, tid: int, tags_id: int, day: str, time: int) -> Optional[Dict[str, Any]]:
         if not self._ensure_connection():
             logger.error("Create session failed: database connection unavailable")
             return None

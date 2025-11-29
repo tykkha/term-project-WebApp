@@ -4,7 +4,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class GatorGuidesTutors:
     def __init__(self, host: str, database: str, user: str, password: str):
         try:
@@ -41,12 +40,7 @@ class GatorGuidesTutors:
             self.cursor = None
             return False
 
-    def create_tutor(
-        self,
-        uid: int,
-        rating: float = 0.0,
-        status: str = 'available'
-    ) -> Optional[Dict[str, Any]]:
+    def create_tutor(self, uid: int, rating: float = 0.0, status: str = 'available') -> Optional[Dict[str, Any]]:
         if not self._ensure_connection():
             logger.error("Create tutor failed: database connection unavailable")
             return None
@@ -97,11 +91,7 @@ class GatorGuidesTutors:
             logger.error(f"Create tutor error: {e}", exc_info=True)
             return None
 
-    def update_verification_status(
-        self,
-        tid: int,
-        status: str
-    ) -> bool:
+    def update_verification_status(self, tid: int, status: str) -> bool:
         if not self._ensure_connection():
             logger.error("Update verification failed: database connection unavailable")
             return False
@@ -120,11 +110,7 @@ class GatorGuidesTutors:
             logger.error(f"Update verification error: {e}", exc_info=True)
             return False
 
-    def add_tutor_tags(
-        self,
-        tid: int,
-        tag_ids: List[int]
-    ) -> bool:
+    def add_tutor_tags(self, tid: int, tag_ids: List[int]) -> bool:
         if not self._ensure_connection():
             logger.error("Add tutor tags failed: database connection unavailable")
             return False
@@ -173,7 +159,7 @@ class GatorGuidesTutors:
             if not tutor:
                 return None
 
-            # Get tutor's expertise tags
+            # Get tutor's tags
             tags_query = """
                 SELECT tg.tagsID, tg.tags
                 FROM TutorTags tt

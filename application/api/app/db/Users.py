@@ -5,7 +5,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class GatorGuidesUsers:
     def __init__(self, host: str, database: str, user: str, password: str):
         try:
@@ -50,21 +49,11 @@ class GatorGuidesUsers:
     def _verify_password(self, password: str, hashed: str) -> bool:
         return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
-    def create_user(
-        self,
-        first_name: str,
-        last_name: str,
-        email: str,
-        password: str,
-        user_type: str = 'user',
-        profile_picture: Optional[str] = None,
-        bio: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
+    def create_user(self, first_name: str, last_name: str, email: str, password: str, user_type: str = 'user', profile_picture: Optional[str] = None, bio: Optional[str] = None) -> Optional[Dict[str, Any]]:
         if not self._ensure_connection():
             logger.error("Create user failed: database connection unavailable")
             return None
 
-        # Validate user type
         if user_type not in ['user', 'admin']:
             logger.error(f"Invalid user type: {user_type}")
             return None
@@ -174,14 +163,7 @@ class GatorGuidesUsers:
             logger.error(f"Get user error: {e}", exc_info=True)
             return None
 
-    def update_user(
-        self,
-        uid: int,
-        first_name: Optional[str] = None,
-        last_name: Optional[str] = None,
-        profile_picture: Optional[str] = None,
-        bio: Optional[str] = None
-    ) -> bool:
+    def update_user(self, uid: int, first_name: Optional[str] = None, last_name: Optional[str] = None, profile_picture: Optional[str] = None, bio: Optional[str] = None) -> bool:
         if not self._ensure_connection():
             logger.error("Update user failed: database connection unavailable")
             return False

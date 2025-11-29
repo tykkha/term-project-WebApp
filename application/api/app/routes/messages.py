@@ -12,12 +12,10 @@ router = APIRouter()
 messages_instance = None
 auth_instance = None
 
-
 class SendMessageRequest(BaseModel):
     senderUID: int = Field(..., description="Sender user ID")
     receiverUID: int = Field(..., description="Receiver user ID")
     content: str = Field(..., min_length=1, description="Message content")
-
 
 class ConnectionManager:
     def __init__(self):
@@ -48,9 +46,7 @@ class ConnectionManager:
     def is_online(self, user_id: int) -> bool:
         return user_id in self.active_connections
 
-
 manager = ConnectionManager()
-
 
 def get_messages_manager():
     global messages_instance
@@ -63,7 +59,6 @@ def get_messages_manager():
         )
     return messages_instance
 
-
 def get_auth_manager():
     global auth_instance
     if not auth_instance:
@@ -74,7 +69,6 @@ def get_auth_manager():
             password=settings.DATABASE_PASSWORD
         )
     return auth_instance
-
 
 async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGuidesAuth = Depends(get_auth_manager)) -> int:
     if not authorization:
@@ -90,7 +84,6 @@ async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGui
         raise HTTPException(status_code=401, detail="Invalid or expired session")
     
     return uid
-
 
 # Check if session has been scheduled between tutor and user
 @router.get("/messages/can-message/{uid1}/{uid2}")
@@ -112,7 +105,6 @@ async def check_messaging_allowed(uid1: int, uid2: int, current_user: int = Depe
     except Exception as e:
         logger.error(f"Check messaging error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-
 
 # Send a message
 @router.post("/messages", response_model=Dict[str, Any])
@@ -152,7 +144,6 @@ async def send_message(request: SendMessageRequest, current_user: int = Depends(
         logger.error(f"Send message error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-
 # Get conversation between two users
 @router.get("/messages/{uid1}/{uid2}", response_model=List[Dict[str, Any]])
 async def get_conversation(uid1: int, uid2: int, limit: int = 50, offset: int = 0, current_user: int = Depends(get_current_user), messages_mgr: GatorGuidesMessages = Depends(get_messages_manager)):
@@ -171,7 +162,6 @@ async def get_conversation(uid1: int, uid2: int, limit: int = 50, offset: int = 
         logger.error(f"Get conversation error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-
 # Get message history for recent conversations
 @router.get("/users/{uid}/conversations", response_model=List[Dict[str, Any]])
 async def get_recent_conversations(uid: int, limit: int = 20, current_user: int = Depends(get_current_user), messages_mgr: GatorGuidesMessages = Depends(get_messages_manager)):
@@ -189,7 +179,6 @@ async def get_recent_conversations(uid: int, limit: int = 20, current_user: int 
     except Exception as e:
         logger.error(f"Get conversations error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-
 
 # WebSocket endpoint
 @router.websocket("/ws/{user_id}")

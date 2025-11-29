@@ -12,7 +12,6 @@ router = APIRouter()
 users_instance = None
 auth_instance = None
 
-
 class RegisterRequest(BaseModel):
     firstName: str = Field(..., min_length=1, max_length=255)
     lastName: str = Field(..., min_length=1, max_length=255)
@@ -30,7 +29,6 @@ class RegisterRequest(BaseModel):
             raise ValueError('Invalid email format')
         return v.lower()
 
-
 class LoginRequest(BaseModel):
     email: str
     password: str
@@ -43,17 +41,14 @@ class LoginRequest(BaseModel):
             raise ValueError('Invalid email format')
         return v.lower()
 
-
 class LogoutRequest(BaseModel):
     sessionID: str = Field(..., description="Session ID to logout")
-
 
 class UpdateUserRequest(BaseModel):
     firstName: Optional[str] = Field(None, min_length=1, max_length=255)
     lastName: Optional[str] = Field(None, min_length=1, max_length=255)
     profilePicture: Optional[str] = None
     bio: Optional[str] = None
-
 
 def get_users_manager():
     global users_instance
@@ -66,7 +61,6 @@ def get_users_manager():
         )
     return users_instance
 
-
 def get_auth_manager():
     global auth_instance
     if not auth_instance:
@@ -77,7 +71,6 @@ def get_auth_manager():
             password=settings.DATABASE_PASSWORD
         )
     return auth_instance
-
 
 async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGuidesAuth = Depends(get_auth_manager)) -> int:
     if not authorization:
@@ -94,7 +87,6 @@ async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGui
         raise HTTPException(status_code=401, detail="Invalid or expired session")
     
     return uid
-
 
 # Register a new user
 @router.post("/register", response_model=Dict[str, Any])
@@ -125,7 +117,6 @@ async def register_user(request: RegisterRequest, users_mgr: GatorGuidesUsers = 
     except Exception as e:
         logger.error(f"Registration error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-
 
 # Login user
 @router.post("/login", response_model=Dict[str, Any])
@@ -158,7 +149,6 @@ async def login_user(request: LoginRequest, users_mgr: GatorGuidesUsers = Depend
         logger.error(f"Login error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-
 # Logout user
 @router.post("/logout", response_model=Dict[str, Any])
 async def logout_user(request: LogoutRequest, auth_mgr: GatorGuidesAuth = Depends(get_auth_manager)):
@@ -174,7 +164,6 @@ async def logout_user(request: LogoutRequest, auth_mgr: GatorGuidesAuth = Depend
     except Exception as e:
         logger.error(f"Logout error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-
 
 # Get user by ID
 @router.get("/users/{uid}", response_model=Dict[str, Any])
@@ -193,15 +182,9 @@ async def get_user(uid: int, users_mgr: GatorGuidesUsers = Depends(get_users_man
         logger.error(f"Get user error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-
 # Update user information
 @router.put("/users/{uid}", response_model=Dict[str, Any])
-async def update_user(
-    uid: int,
-    request: UpdateUserRequest,
-    current_user: int = Depends(get_current_user),
-    users_mgr: GatorGuidesUsers = Depends(get_users_manager)
-):
+async def update_user(uid: int, request: UpdateUserRequest, current_user: int = Depends(get_current_user), users_mgr: GatorGuidesUsers = Depends(get_users_manager)):
     try:
         if current_user != uid:
             raise HTTPException(

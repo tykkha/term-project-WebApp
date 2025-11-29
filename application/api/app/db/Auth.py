@@ -6,7 +6,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class GatorGuidesAuth:
     def __init__(self, host: str, database: str, user: str, password: str):
         try:

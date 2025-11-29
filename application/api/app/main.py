@@ -1,7 +1,7 @@
 from typing import Union
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import search, sessions, users, tutors, messages # Changed from app.routes to routes
+from routes import search, sessions, users, tutors, messages, posts # Changed from app.routes to routes
 from db.Auth import GatorGuidesAuth
 from core.config import settings
 import logging
@@ -81,3 +81,4 @@ app.include_router(sessions.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(tutors.router, prefix="/api")
 app.include_router(messages.router, prefix="/api")
+app.include_router(posts.router, prefix="/api")

@@ -13,20 +13,16 @@ tutors_instance = None
 users_instance = None
 auth_instance = None
 
-
 class CreateTutorRequest(BaseModel):
     uid: int = Field(..., description="User ID to convert to tutor")
     rating: float = Field(default=0.0, ge=0.0, le=5.0)
     status: str = Field(default='available', description="'available', 'away', or 'busy'")
 
-
 class UpdateVerificationRequest(BaseModel):
     status: str = Field(..., description="'unapproved', 'pending', or 'approved'")
 
-
 class AddTagsRequest(BaseModel):
     tagIds: List[int] = Field(..., description="List of tag IDs for tutor expertise")
-
 
 def get_tutors_manager():
     global tutors_instance
@@ -39,7 +35,6 @@ def get_tutors_manager():
         )
     return tutors_instance
 
-
 def get_users_manager():
     global users_instance
     if not users_instance:
@@ -51,7 +46,6 @@ def get_users_manager():
         )
     return users_instance
 
-
 def get_auth_manager():
     global auth_instance
     if not auth_instance:
@@ -62,7 +56,6 @@ def get_auth_manager():
             password=settings.DATABASE_PASSWORD
         )
     return auth_instance
-
 
 async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGuidesAuth = Depends(get_auth_manager)) -> int:
     if not authorization:
@@ -79,7 +72,6 @@ async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGui
     
     return uid
 
-
 async def get_current_admin(current_user: int = Depends(get_current_user), users_mgr: GatorGuidesUsers = Depends(get_users_manager)) -> int:
     user = users_mgr.get_user(current_user)
     
@@ -91,7 +83,6 @@ async def get_current_admin(current_user: int = Depends(get_current_user), users
     
     return current_user
 
-
 # Returns top 10 tutors based on ratings
 @router.get("/tutors/top", response_model=List[Dict[str, Any]])
 async def get_top_tutors(tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
@@ -101,7 +92,6 @@ async def get_top_tutors(tutors_mgr: GatorGuidesTutors = Depends(get_tutors_mana
     except Exception as e:
         logger.error(f"Top tutors error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-
 
 # Get tutor by tutor ID
 @router.get("/tutors/{tid}", response_model=Dict[str, Any])
@@ -168,7 +158,6 @@ async def create_tutor(request: CreateTutorRequest, current_user: int = Depends(
         logger.error(f"Create tutor error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-
 # Change tutor verification status
 @router.put("/tutors/{tid}/verification", response_model=Dict[str, Any])
 async def update_verification(tid: int, request: UpdateVerificationRequest, current_admin: int = Depends(get_current_admin), tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
@@ -192,7 +181,6 @@ async def update_verification(tid: int, request: UpdateVerificationRequest, curr
     except Exception as e:
         logger.error(f"Update verification error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-
 
 # Add expertise tags to tutor
 @router.post("/tutors/{tid}/tags", response_model=Dict[str, Any])

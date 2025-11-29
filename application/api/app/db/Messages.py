@@ -5,7 +5,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class GatorGuidesMessages:
     def __init__(self, host: str, database: str, user: str, password: str):
         try:
@@ -68,12 +67,7 @@ class GatorGuidesMessages:
             return False
 
     # Stores message in database to be retrieved in user conversations
-    def send_message(
-        self,
-        sender_uid: int,
-        receiver_uid: int,
-        content: str
-    ) -> Optional[Dict[str, Any]]:
+    def send_message(self, sender_uid: int, receiver_uid: int, content: str) -> Optional[Dict[str, Any]]:
         if not self._ensure_connection():
             logger.error("Send message failed: database connection unavailable")
             return None
@@ -119,13 +113,7 @@ class GatorGuidesMessages:
             return None
 
     # Pulls up full conversation between tutor and user
-    def get_conversation(
-        self,
-        uid1: int,
-        uid2: int,
-        limit: int = 50,
-        offset: int = 0
-    ) -> List[Dict[str, Any]]:
+    def get_conversation(self, uid1: int, uid2: int, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         if not self._ensure_connection():
             logger.error("Get conversation failed: database connection unavailable")
             return []
