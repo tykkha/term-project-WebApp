@@ -165,7 +165,7 @@ async def logout_user(request: LogoutRequest, auth_mgr: GatorGuidesAuth = Depend
         logger.error(f"Logout error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-# Get user by ID
+# Get user by ID (profile)
 @router.get("/users/{uid}", response_model=Dict[str, Any])
 async def get_user(uid: int, users_mgr: GatorGuidesUsers = Depends(get_users_manager)):
     try:
@@ -182,7 +182,7 @@ async def get_user(uid: int, users_mgr: GatorGuidesUsers = Depends(get_users_man
         logger.error(f"Get user error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-# Update user information
+# Update user information (profile)
 @router.put("/users/{uid}", response_model=Dict[str, Any])
 async def update_user(uid: int, request: UpdateUserRequest, current_user: int = Depends(get_current_user), users_mgr: GatorGuidesUsers = Depends(get_users_manager)):
     try:

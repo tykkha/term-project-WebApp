@@ -71,11 +71,26 @@ CREATE TABLE Sessions
     tagsID    INT NOT NULL,
     day       ENUM ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'),
     time      INT CHECK (time >= 0 AND time <= 23),
-    started DATETIME DEFAULT NULL,
+    started   DATETIME DEFAULT NULL,
     concluded DATETIME DEFAULT NULL,
     FOREIGN KEY (tid) REFERENCES Tutor (tid) ON DELETE CASCADE,
     FOREIGN KEY (uid) REFERENCES User (uid) ON DELETE CASCADE,
     FOREIGN KEY (tagsID) REFERENCES Tags (tagsID) ON DELETE CASCADE
+);
+
+DROP TABLE IF EXISTS Ratings;
+CREATE TABLE Ratings
+(
+    rid       INT PRIMARY KEY AUTO_INCREMENT,
+    tid       INT    NOT NULL,
+    uid       INT    NOT NULL,
+    sid       INT    NOT NULL,
+    rating    DOUBLE NOT NULL CHECK (rating >= 0 AND rating <= 5),
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (tid) REFERENCES Tutor (tid) ON DELETE CASCADE,
+    FOREIGN KEY (uid) REFERENCES User (uid) ON DELETE CASCADE,
+    FOREIGN KEY (sid) REFERENCES Sessions (sid) ON DELETE CASCADE,
+    UNIQUE KEY per_session_rating (uid, sid)
 );
 
 # Generic messages table to populate dms between users and tutors
@@ -95,10 +110,10 @@ CREATE TABLE Messages
 DROP TABLE IF EXISTS LoginSessions;
 CREATE TABLE LoginSessions
 (
-    sessionID  VARCHAR(64) PRIMARY KEY,
-    uid        INT NOT NULL,
-    createdAt  DATETIME DEFAULT CURRENT_TIMESTAMP,
-    expiresAt  DATETIME NOT NULL,
+    sessionID VARCHAR(64) PRIMARY KEY,
+    uid       INT      NOT NULL,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expiresAt DATETIME NOT NULL,
     FOREIGN KEY (uid) REFERENCES User (uid) ON DELETE CASCADE,
     INDEX idx_session_expiry (expiresAt)
 );

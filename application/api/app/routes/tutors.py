@@ -24,6 +24,11 @@ class UpdateVerificationRequest(BaseModel):
 class AddTagsRequest(BaseModel):
     tagIds: List[int] = Field(..., description="List of tag IDs for tutor expertise")
 
+class CreateRatingRequest(BaseModel):
+    tid: int = Field(..., description="Tutor ID")
+    sid: int = Field(..., description="Session ID")
+    rating: float = Field(..., ge=0.0, le=5.0, description="Rating value (0-5)")
+
 def get_tutors_manager():
     global tutors_instance
     if not tutors_instance:
@@ -182,7 +187,7 @@ async def update_verification(tid: int, request: UpdateVerificationRequest, curr
         logger.error(f"Update verification error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-# Add expertise tags to tutor
+# Add tags to tutor
 @router.post("/tutors/{tid}/tags", response_model=Dict[str, Any])
 async def add_tutor_tags(tid: int, request: AddTagsRequest, current_user: int = Depends(get_current_user), tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
     try:
@@ -214,4 +219,59 @@ async def add_tutor_tags(tid: int, request: AddTagsRequest, current_user: int = 
         raise
     except Exception as e:
         logger.error(f"Add tags error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+    
+# Submit tutor rating
+@router.post("/tutors/ratings", response_model=Dict[str, Any])
+async def create_rating(request: CreateRatingRequest, current_user: int = Depends(get_current_user),tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
+    try:
+        if not tutors_mgr.user_can_rate_session(current_user, request.sid):
+            raise HTTPException(
+                status_code=403,
+                detail="Cannot rate this session."
+            )
+        
+        rating = tutors_mgr.create_rating(
+            tid=request.tid,
+            uid=current_user,
+            sid=request.sid,
+            rating=request.rating
+        )
+        
+        if rating:
+            logger.info(f"Rating submitted: tid={request.tid}, uid={current_user}, rating={request.rating}")
+            return rating
+        else:
+            raise HTTPException(status_code=400, detail="Failed to submit rating")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Create rating error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Get count of tutor's ratings
+@router.get("/tutors/{tid}/rating-count", response_model=Dict[str, Any])
+async def get_rating_count(tid: int, tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
+    try:
+        count = tutors_mgr.get_tutor_rating_count(tid)
+        return {
+            "tid": tid,
+            "ratingCount": count
+        }
+    except Exception as e:
+        logger.error(f"Get rating count error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Check if user can still rate a session
+@router.get("/sessions/{sid}/can-rate", response_model=Dict[str, Any])
+async def check_can_rate(sid: int, current_user: int = Depends(get_current_user), tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
+    try:
+        can_rate = tutors_mgr.user_can_rate_session(current_user, sid)
+        return {
+            "canRate": can_rate,
+            "message": "You can rate this session" if can_rate else "Cannot rate this session"
+        }
+    except Exception as e:
+        logger.error(f"Check can rate error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
