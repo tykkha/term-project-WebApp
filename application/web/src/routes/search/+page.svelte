@@ -47,81 +47,14 @@
 			}
 		}
 	}
+	
 </script>
 
 <div class="min-h-screen bg-neutral-100 p-6">
-	<div class="mx-auto max-w-7xl">
-		<section class="mb-8 rounded-2xl bg-white p-6 shadow-lg">
-			<h2 class="mb-4 text-2xl font-bold text-gray-800">Search Tutors</h2>
+	<div class="mx-auto max-w-7xl mb-8 flex flex-col md:flex-row">
 
-			<Field.Root class="flex flex-col items-center justify-center gap-4 sm:flex-row">
-				<input
-					type="text"
-					bind:value={searchQuery}
-					onkeydown={(e) => {
-						if (e.key === 'Enter') {
-							e.preventDefault();
-							handleSearch();
-						}
-					}}
-					placeholder="Search by course code or tutor name..."
-					class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 focus:border-[#231161] focus:outline-none"
-				/>
-				<Field.ErrorText>No results found</Field.ErrorText>
-				<button
-					onclick={handleSearch}
-					disabled={isLoading}
-					class="inline-flex w-full items-center gap-2 rounded-lg bg-[#231161] px-4 py-2 text-white hover:bg-[#2d1982] disabled:bg-[#231161]/50 sm:w-auto"
-				>
-					<SearchIcon size={20} />
-					{isLoading ? 'Searching...' : 'Search'}
-				</button>
-			</Field.Root>
-		</section>
-
-		{#if searchResults.length > 0}
-			<section class="space-y-4">
-				{#each searchResults as tutor}
-					<div class="rounded-lg bg-white p-6 shadow-md">
-						<div class="mb-4 flex items-center justify-between">
-							<h3 class="text-xl font-semibold">{tutor.name}</h3>
-							<span class="rounded-full bg-[#231161]/10 px-3 py-1 text-sm text-[#231161]">
-								★ {tutor.rating}
-							</span>
-						</div>
-
-						<div class="mb-2 text-gray-600">
-							<p>Email: {tutor.email}</p>
-							<p>Courses: {tutor.courses.join(', ')}</p>
-						</div>
-
-						{#if tutor.bio}
-							<p class="mb-4 text-gray-700">{tutor.bio}</p>
-						{/if}
-
-						{#if tutor.posts.length > 0}
-							<div class="border-t pt-4">
-								<h4 class="mb-2 font-semibold">Recent Posts</h4>
-								<div class="space-y-2">
-									{#each tutor.posts as post}
-										<div class="rounded-lg bg-gray-50 p-3">
-											<p class="text-sm font-medium text-[#231161]">{post.course}</p>
-											<p class="text-gray-700">{post.content}</p>
-										</div>
-									{/each}
-								</div>
-							</div>
-						{/if}
-					</div>
-				{/each}
-			</section>
-		{:else if isLoading}
-			<div class="text-center text-gray-600">Searching...</div>
-		{:else if searchQuery}
-			<div class="text-center text-gray-600">No results found</div>
-		{/if}
-
-		<section class="mt-8 rounded-2xl bg-white p-6 shadow-lg">
+		<!--Filter card-->
+		<section class="w-full p-4 rounded-2xl bg-white p-6 shadow-lg md:w-4/12">
 			<h2 class="mb-4 text-2xl font-bold text-gray-800">Filter Results</h2>
 
 			<DatePicker.Root bind:value class="inline-flex flex-col gap-8">
@@ -193,5 +126,77 @@
 				</Portal>
 			</DatePicker.Root>
 		</section>
+
+		<!--Search card-->
+		<section class="w-full p-4 rounded-2xl bg-white p-6 shadow-lg md:8/12">
+			<h2 class="mb-4 text-2xl font-bold text-gray-800">Search Tutors</h2>
+
+			<Field.Root class="flex flex-col items-center justify-center gap-4 sm:flex-row">
+				<input
+					type="text"
+					bind:value={searchQuery}
+					onkeydown={(e) => {
+						if (e.key === 'Enter') {
+							e.preventDefault();
+							handleSearch();
+						}
+					}}
+					placeholder="Search by course code or tutor name..."
+					class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 focus:border-[#231161] focus:outline-none"
+				/>
+				<Field.ErrorText>No results found</Field.ErrorText>
+				<button
+					onclick={handleSearch}
+					disabled={isLoading}
+					class="inline-flex w-full items-center gap-2 rounded-lg bg-[#231161] px-4 py-2 text-white hover:bg-[#2d1982] disabled:bg-[#231161]/50 sm:w-auto"
+				>
+					<SearchIcon size={20} />
+					{isLoading ? 'Searching...' : 'Search'}
+				</button>
+			</Field.Root>
+		</section>
 	</div>
+
+	<!--Search results-->
+	{#if searchResults.length > 0}
+			<section class="space-y-4">
+				{#each searchResults as tutor}
+					<div class="rounded-lg bg-white p-6 shadow-md">
+						<div class="mb-4 flex items-center justify-between">
+							<h3 class="text-xl font-semibold">{tutor.name}</h3>
+							<span class="rounded-full bg-[#231161]/10 px-3 py-1 text-sm text-[#231161]">
+								★ {tutor.rating}
+							</span>
+						</div>
+
+						<div class="mb-2 text-gray-600">
+							<p>Email: {tutor.email}</p>
+							<p>Courses: {tutor.courses.join(', ')}</p>
+						</div>
+
+						{#if tutor.bio}
+							<p class="mb-4 text-gray-700">{tutor.bio}</p>
+						{/if}
+
+						{#if tutor.posts.length > 0}
+							<div class="border-t pt-4">
+								<h4 class="mb-2 font-semibold">Recent Posts</h4>
+								<div class="space-y-2">
+									{#each tutor.posts as post}
+										<div class="rounded-lg bg-gray-50 p-3">
+											<p class="text-sm font-medium text-[#231161]">{post.course}</p>
+											<p class="text-gray-700">{post.content}</p>
+										</div>
+									{/each}
+								</div>
+							</div>
+						{/if}
+					</div>
+				{/each}
+			</section>
+		{:else if isLoading}
+			<div class="text-center text-gray-600">Searching...</div>
+		{:else if searchQuery}
+			<div class="text-center text-gray-600">No results found</div>
+		{/if}
 </div>

@@ -11,6 +11,9 @@
 				name="Andy Yip"
 				github="https://github.com/andyyip915"
 				src="https://avatars.githubusercontent.com/u/120161192?v=4"
+				description={[
+					"Hello, my name is Andy Yip. I am a fourth year student computer science major at San Francisco State University. "
+				]}
 			/>
 		</div>
 	</div>
