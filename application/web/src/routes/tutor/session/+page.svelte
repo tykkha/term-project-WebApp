@@ -91,6 +91,11 @@
         console.log('Session Data:', data);
         
         submittedSessionData = data;
+
+        day = '';
+        startSession = '';
+        endSession = '';
+        location = '';
     }
 </script>
 

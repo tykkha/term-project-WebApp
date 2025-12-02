@@ -23,6 +23,18 @@
 	let searchResults = $state([]) as Tutor[];
 	let isLoading = $state(false);
 
+	// The main variable to submit (the tags the user selected)
+    let selectedTags = $state<string[]>([]);    
+
+    // Input for the current search text
+    let tagSearchInput = $state('');
+
+    // Temp tags
+    const availableTags = [
+        'CSC645', 'CSC413', 'CSC648', 'CSC220', 
+        'ENGL101', 'MATH300', 'PHYS150', 'BIOL199',
+    ];
+
 	async function handleSearch() {
 		if (!searchQuery.trim()) return;
 
@@ -37,6 +49,7 @@
 			isLoading = false;
 		}
 	}
+
 	if (browser) {
 		const urlParams = new URLSearchParams(window.location.search);
 		console.log(urlParams.size);
@@ -47,6 +60,34 @@
 			}
 		}
 	}
+
+	// --- Tag Management Functions ---
+
+    // Run automatically whenever tagSearchInput changes
+    let filteredTags = $derived(
+        tagSearchInput 
+            ? availableTags.filter(tag => 
+                  // 1. Tag is NOT already selected
+                  !selectedTags.includes(tag) && 
+                  // 2. Tag matches the search input
+                  tag.toLowerCase().includes(tagSearchInput.toLowerCase())
+              )
+            : []
+    );
+        
+    // Function to add a tag from the suggestion list
+    function addTag(tag: string) {
+        if (!selectedTags.includes(tag)) {
+            selectedTags = [...selectedTags, tag];
+        }
+        tagSearchInput = ''; // Clear the input after selection
+    }
+
+    // Function to remove a tag chip
+    function removeTag(tagToRemove: string) {
+        selectedTags = selectedTags.filter(tag => tag !== tagToRemove);
+    }
+    
 	
 </script>
 
@@ -57,6 +98,7 @@
 		<section class="w-full p-4 rounded-2xl bg-white p-6 shadow-lg md:w-4/12">
 			<h2 class="mb-4 text-2xl font-bold text-gray-800">Filter Results</h2>
 
+			<!--Date picker-->
 			<DatePicker.Root bind:value class="inline-flex flex-col gap-8">
 				<!-- <DatePicker.Label>Select Date</DatePicker.Label> -->
 				<DatePicker.Control class="inline-flex gap-4">
@@ -125,6 +167,47 @@
 					</DatePicker.Positioner>
 				</Portal>
 			</DatePicker.Root>
+
+			<!--Time filter-->
+
+			<!--Tags filter-->
+			<div>
+                <label for="" class="block text-xl">Tags (Courses)</label>
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        bind:value={tagSearchInput} 
+                        placeholder="Search courses (e.g., CSC645)" 
+                        class="w-full p-2 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#231161] focus:border-[#231161] rounded-lg"
+                    >
+                            
+                    {#if filteredTags.length > 0}
+                        <div class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1">
+                            {#each filteredTags as tag (tag)}
+                                <button 
+                                    type="button"
+                                    onclick={() => addTag(tag)}
+                                    class="block w-full text-left p-2 hover:bg-neutral-100"
+                                >
+                                    {tag}
+                                </button>
+                            {/each}
+                        </div>
+                    {/if}
+                </div>
+                    <div class="flex flex-wrap gap-2 my-2">
+                    {#each selectedTags as tag (tag)}
+                        <button 
+                            type="button"
+                            onclick={() => removeTag(tag)}
+                            class="flex items-center bg-[#231161] hover:bg-[#2d1982] text-white text-base px-3 py-1 rounded-full"
+                        >
+                            {tag}
+                            <span class="ml-1 font-bold">x</span>
+                        </button>
+                    {/each}
+                </div>
+            </div>
 		</section>
 
 		<!--Search card-->
@@ -163,7 +246,9 @@
 				{#each searchResults as tutor}
 					<div class="rounded-lg bg-white p-6 shadow-md">
 						<div class="mb-4 flex items-center justify-between">
-							<h3 class="text-xl font-semibold">{tutor.name}</h3>
+							<a href={`/tutors/${tutor}`} class="text-xl font-semibold text-[#231161] hover:underline">
+								<h3>{tutor.name}</h3>
+							</a>
 							<span class="rounded-full bg-[#231161]/10 px-3 py-1 text-sm text-[#231161]">
 								★ {tutor.rating}
 							</span>

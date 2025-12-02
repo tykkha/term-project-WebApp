@@ -22,6 +22,13 @@
         'ENGL101', 'MATH300', 'PHYS150', 'BIOL199',
     ];
 
+    // ** New state for submitted data **
+    let submittedData = $state<{
+        rating: number | undefined;
+        feedback: string;
+        selectedTags: string[];
+    } | null>(null);
+
     // --- Tag Management Functions ---
 
     // Reactively filter the available tags based on user input
@@ -60,7 +67,27 @@
 
     async function handleSubmit() {
         if (!isRatingValid || !isFeedbackValid) return ; 
+        
+        const validRating = isRatingValid(rating);
+        const validFeedback = isFeedbackValid(feedback);
+        
+        if (!validRating || !validFeedback) {
+            // The derived properties will show the error messages
+            return;
+        }
 
+        // If validation passes, assign the current state to submittedData
+        submittedData = {
+            rating: rating,
+            feedback: feedback,
+            selectedTags: selectedTags,
+        };
+
+        console.log("Submitting Review Data:", submittedData);
+        
+        rating = undefined;
+        feedback = '';
+        selectedTags = [];
     }
         
 </script>
@@ -132,6 +159,32 @@
                 </div>
             </form>
         </div>
+
+        {#if submittedData}
+            <div class="w-full rounded-2xl bg-white p-4 drop-shadow-lg md:w-6/12">
+                <h2 class="text-3xl underline mb-4 text-green-700">✅ Submission Successful!</h2>
+                <h3 class="text-xl font-semibold mb-2">Review Data:</h3>
+                <div class="space-y-3">
+                    <p class="text-lg">
+                        <strong class="font-bold">Rating:</strong> {submittedData.rating?.toFixed(1) ?? 'N/A'} / 5.0
+                    </p>
+                    <p class="text-lg">
+                        <strong class="font-bold">Tags (Courses):</strong> 
+                        {#if submittedData.selectedTags.length > 0}
+                            <span class="font-mono text-sm bg-neutral-200 p-1 rounded">
+                                {submittedData.selectedTags.join(', ')}
+                            </span>
+                        {:else}
+                            <span class="italic text-gray-500">No tags selected.</span>
+                        {/if}
+                    </p>
+                    <div class="p-3 border rounded-lg bg-neutral-50">
+                        <strong class="block font-bold text-lg mb-1">Feedback:</strong>
+                        <p class="whitespace-pre-wrap">{submittedData.feedback || 'No feedback provided.'}</p>
+                    </div>
+                </div>
+            </div>
+        {/if}
     </div>
 </div>
 
