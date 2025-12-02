@@ -53,15 +53,15 @@ class GatorGuidesSearch:
                 all_tutors_query = """
                     SELECT 
                         p.pid, p.tid, p.content, p.timestamp,
-                        t.rating, t.status,
+                        tutor.rating, tutor.status,
                         u.firstName, u.lastName, u.email, u.bio,
                         tg.tags as post_tag
                     FROM Posts p
                     INNER JOIN Tags tg ON p.tagsID = tg.tagsID
-                    INNER JOIN Tutor t ON p.tid = t.tid
-                    INNER JOIN User u ON t.uid = u.uid
-                    WHERE t.verificationStatus = 'approved'
-                    ORDER BY t.rating DESC, p.timestamp DESC
+                    INNER JOIN Tutor tutor ON p.tid = tutor.tid
+                    INNER JOIN User u ON tutor.uid = u.uid
+                    WHERE tutor.verificationStatus = 'approved'
+                    ORDER BY tutor.rating DESC, p.timestamp DESC
                 """
                 self.cursor.execute(all_tutors_query)
                 posts_by_tag = self.cursor.fetchall()
@@ -69,16 +69,16 @@ class GatorGuidesSearch:
                 tag_search_query = """
                     SELECT 
                         p.pid, p.tid, p.content, p.timestamp,
-                        t.rating, t.status,
+                        tutor.rating, tutor.status,
                         u.firstName, u.lastName, u.email, u.bio,
                         tg.tags as post_tag
                     FROM Posts p
                     INNER JOIN Tags tg ON p.tagsID = tg.tagsID
-                    INNER JOIN Tutor t ON p.tid = t.tid
-                    INNER JOIN User u ON t.uid = u.uid
+                    INNER JOIN Tutor tutor ON p.tid = tutor.tid
+                    INNER JOIN User u ON tutor.uid = u.uid
                     WHERE tg.tags LIKE %s
-                    AND t.verificationStatus = 'approved'
-                    ORDER BY t.rating DESC, p.timestamp DESC
+                    AND tutor.verificationStatus = 'approved'
+                    ORDER BY tutor.rating DESC, p.timestamp DESC
                 """
                 self.cursor.execute(tag_search_query, (f'%{query}%',))
                 posts_by_tag = self.cursor.fetchall()
