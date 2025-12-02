@@ -1,13 +1,15 @@
 PY=python3
+VENV=.venv
+VENV_BIN=$(VENV)/bin
 
 .PHONY: setup dev api-dev web-dev build-web build-api migrate test lint deploy server-api server-web
 
 setup:
-	cd api/app && $(PY) -m venv .venv && . .venv/bin/activate && pip install -U pip wheel && pip install -r requirements.txt || true
+	$(PY) -m venv $(VENV) && . $(VENV_BIN)/activate && pip install -U pip wheel && pip install -r api/app/requirements.txt || true
 	cd web && npm ci
 
 api-dev:
-	cd api/app && . .venv/bin/activate && uvicorn main:app --reload --port 8001
+	. $(VENV_BIN)/activate && cd api/app && uvicorn main:app --reload --port 8001
 
 web-dev:
 	cd web && npm run dev -- --open
@@ -19,7 +21,7 @@ build-web:
 	cd web && npm run build && zip -r build.zip build 
 
 build-api:
-	cd api/app && . .venv/bin/activate && pip install -r requirements.txt
+	. $(VENV_BIN)/activate && pip install -r api/app/requirements.txt
 
 server-api:
 	git pull origin main
