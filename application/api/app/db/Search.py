@@ -133,8 +133,6 @@ class GatorGuidesSearch:
                 data['courses'] = list(data['courses'])
                 results.append(data)
 
-            if not query or query.strip() == '':
-                return results
 
             name_search_query = """
                 SELECT DISTINCT
