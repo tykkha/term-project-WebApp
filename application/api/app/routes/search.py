@@ -21,8 +21,9 @@ def get_search():
     return search_instance
 
 # Searches for tutors based on tags and names
+@router.get("/search")
 @router.get("/search/{query}", response_model=List[Dict[str, Any]])
-async def search(query: str, search_db: GatorGuidesSearch = Depends(get_search)):
+async def search(query: str = "", search_db: GatorGuidesSearch = Depends(get_search)):
     try:
         results = search_db.search(query)
         return results
