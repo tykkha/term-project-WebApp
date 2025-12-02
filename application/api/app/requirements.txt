@@ -2,6 +2,8 @@ annotated-types==0.7.0
 anyio==4.10.0
 bcrypt==4.0.1
 certifi==2025.8.3
+cffi==2.0.0
+charset-normalizer==3.4.4
 click==8.3.0
 cryptography==46.0.3
 dnspython==2.8.0
@@ -19,6 +21,7 @@ markdown-it-py==4.0.0
 MarkupSafe==3.0.2
 mdurl==0.1.2
 mysql-connector-python==9.1.0
+pycparser==2.23
 pydantic==2.11.9
 pydantic-settings==2.12.0
 pydantic_core==2.33.2
@@ -26,6 +29,7 @@ Pygments==2.19.2
 python-dotenv==1.1.1
 python-multipart==0.0.20
 PyYAML==6.0.2
+requests==2.32.5
 rich==14.1.0
 rich-toolkit==0.15.1
 rignore==0.6.4
