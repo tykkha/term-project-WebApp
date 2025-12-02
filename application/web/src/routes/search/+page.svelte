@@ -24,8 +24,6 @@
 	let isLoading = $state(false);
 
 	async function handleSearch() {
-		if (!searchQuery.trim()) return;
-
 		isLoading = true;
 		try {
 			const response = await fetch(`/api/search/${encodeURIComponent(searchQuery)}`);
