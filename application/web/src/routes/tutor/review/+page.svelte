@@ -1,26 +1,190 @@
-<script>
+<script lang="ts">
+    import {parseDate} from '@ark-ui/svelte/date-picker';
 
+    // time 
+    const currDay = new Date();
+    const date = currDay.toISOString().split('T')[0];
+	let value = $state([parseDate(date)]);
+    
+    // Review variables 
+    let rating = $state<number>();
+    let feedback = $state('');
+    
+    // The main variable to submit (the tags the user selected)
+    let selectedTags = $state<string[]>([]);    
+
+    // Input for the current search text
+    let tagSearchInput = $state('');
+
+    // Temp tags
+    const availableTags = [
+        'CSC645', 'CSC413', 'CSC648', 'CSC220', 
+        'ENGL101', 'MATH300', 'PHYS150', 'BIOL199',
+    ];
+
+    // ** New state for submitted data **
+    let submittedData = $state<{
+        rating: number | undefined;
+        feedback: string;
+        selectedTags: string[];
+    } | null>(null);
+
+    // --- Tag Management Functions ---
+
+    // Reactively filter the available tags based on user input
+    // The $: syntax makes this run automatically whenever tagSearchInput changes
+     let filteredTags = $derived(
+        tagSearchInput 
+            ? availableTags.filter(tag => 
+                  // 1. Tag is NOT already selected
+                  !selectedTags.includes(tag) && 
+                  // 2. Tag matches the search input
+                  tag.toLowerCase().includes(tagSearchInput.toLowerCase())
+              )
+            : []
+    );
+        
+    // Function to add a tag from the suggestion list
+    function addTag(tag: string) {
+        if (!selectedTags.includes(tag)) {
+            selectedTags = [...selectedTags, tag];
+        }
+        tagSearchInput = ''; // Clear the input after selection
+    }
+
+    // Function to remove a tag chip
+    function removeTag(tagToRemove: string) {
+        selectedTags = selectedTags.filter(tag => tag !== tagToRemove);
+    }
+    
+    function isRatingValid (rating: number) : boolean {
+        return (!isNaN(rating) && (rating) >= 1.0 && (rating) <= 5.0);
+    } 
+
+    function isFeedbackValid (feedback: string) : boolean {
+        return (feedback.length <= 200);
+    }
+
+    async function handleSubmit() {
+        if (!isRatingValid || !isFeedbackValid) return ; 
+        
+        const validRating = isRatingValid(rating);
+        const validFeedback = isFeedbackValid(feedback);
+        
+        if (!validRating || !validFeedback) {
+            // The derived properties will show the error messages
+            return;
+        }
+
+        // If validation passes, assign the current state to submittedData
+        submittedData = {
+            rating: rating,
+            feedback: feedback,
+            selectedTags: selectedTags,
+        };
+
+        console.log("Submitting Review Data:", submittedData);
+        
+        rating = undefined;
+        feedback = '';
+        selectedTags = [];
+    }
+        
 </script>
 
 <!--Review page-->
 <div class="min-h-screen min-w-screen bg-neutral-100">
     <div class="p-4">
-        <a href="/tutor" class="hover:underline">← Back to Tutor</a>
+        <a href="/tutor/r" class="hover:underline">← Back to Tutor</a>
     </div>
 	<div class="flex gap-8 p-8 justify-center">
         <div class="w-full rounded-2xl bg-white p-4 drop-shadow-lg md:w-6/12">
             <h2 class="text-3xl underline">Write your Review</h2>
-            <form action="">
+            <form onsubmit={handleSubmit}>
                 <div class="flex-col">
                     <!--Should be checked to be between 1.0-5.0-->
                     <label for="rating" class="block text-xl">Rating</label>
-                    <input type="text" placeholder="0.0 - 5.0" class="p-2 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#231161] focus:border-[#231161] rounded-lg">
+                    <input type="number" bind:value={rating} placeholder="1.0 - 5.0" class="p-2 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#231161] focus:border-[#231161] rounded-lg">
+                    {#if !isRatingValid}
+                        <p class="text-sm text-red-500">Rating is not between 1.0 - 5.0</p>
+                    {/if}
+
+                    <!--Tags (courses)-->
+                    <div>
+                        <label for="" class="block text-xl">Tags (Courses)</label>
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                bind:value={tagSearchInput} 
+                                placeholder="Search courses (e.g., CSC645)" 
+                                class="w-full p-2 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#231161] focus:border-[#231161] rounded-lg"
+                            >
+                            
+                            {#if filteredTags.length > 0}
+                                <div class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1">
+                                    {#each filteredTags as tag (tag)}
+                                        <button 
+                                            type="button"
+                                            onclick={() => addTag(tag)}
+                                            class="block w-full text-left p-2 hover:bg-neutral-100"
+                                        >
+                                            {tag}
+                                        </button>
+                                    {/each}
+                                </div>
+                            {/if}
+                        </div>
+                         <div class="flex flex-wrap gap-2 my-2">
+                            {#each selectedTags as tag (tag)}
+                                <button 
+                                    type="button"
+                                    onclick={() => removeTag(tag)}
+                                    class="flex items-center bg-[#231161] hover:bg-[#2d1982] text-white text-base px-3 py-1 rounded-full"
+                                >
+                                    {tag}
+                                    <span class="ml-1 font-bold">x</span>
+                                </button>
+                            {/each}
+                        </div>
+                    </div>
+                    
                     <!--Character limit ~200?-->
                     <label for="description" class="block text-xl">Feedback</label>
-                    <textarea id="" rows="5" placeholder="Share your experience (200 character limit)" class="w-full p-2 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#231161] focus:border-[#231161] rounded-lg"></textarea>         
-                    <input type="submit" class="block mx-auto bg-[#231161] hover:bg-[#2d1982] text-white py-2 px-3 rounded">
+                    <textarea rows="5" bind:value={feedback} placeholder="Share your experience (200 character limit)" class="w-full p-2 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#231161] focus:border-[#231161] rounded-lg"></textarea>         
+                    <p class="text-base">{feedback.length} / 200</p>
+                     {#if !isFeedbackValid}
+                        <p class="text-sm text-red-500">Feedback exceeds the 200-character limit.</p>
+                    {/if}
+                    <button type="submit" class="block mx-auto bg-[#231161] hover:bg-[#2d1982] text-white py-2 px-3 rounded">Submit</button>
                 </div>
             </form>
         </div>
+
+        {#if submittedData}
+            <div class="w-full rounded-2xl bg-white p-4 drop-shadow-lg md:w-6/12">
+                <h2 class="text-3xl underline mb-4 text-green-700">✅ Submission Successful!</h2>
+                <h3 class="text-xl font-semibold mb-2">Review Data:</h3>
+                <div class="space-y-3">
+                    <p class="text-lg">
+                        <strong class="font-bold">Rating:</strong> {submittedData.rating?.toFixed(1) ?? 'N/A'} / 5.0
+                    </p>
+                    <p class="text-lg">
+                        <strong class="font-bold">Tags (Courses):</strong> 
+                        {#if submittedData.selectedTags.length > 0}
+                            <span class="font-mono text-sm bg-neutral-200 p-1 rounded">
+                                {submittedData.selectedTags.join(', ')}
+                            </span>
+                        {:else}
+                            <span class="italic text-gray-500">No tags selected.</span>
+                        {/if}
+                    </p>
+                    <div class="p-3 border rounded-lg bg-neutral-50">
+                        <strong class="block font-bold text-lg mb-1">Feedback:</strong>
+                        <p class="whitespace-pre-wrap">{submittedData.feedback || 'No feedback provided.'}</p>
+                    </div>
+                </div>
+            </div>
+        {/if}
     </div>
 </div>
+
