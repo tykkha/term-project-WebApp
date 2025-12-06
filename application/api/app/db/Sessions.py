@@ -57,33 +57,33 @@ class GatorGuidesSessions:
 
         try:
             query = """
-                INSERT INTO Sessions (uid, tid, tagsID, day, time, started, concluded)
-                VALUES (%s, %s, %s, %s, %s, NULL, NULL)
-            """
-            
+                    INSERT INTO Sessions (uid, tid, tagsID, day, time, started, concluded)
+                    VALUES (%s, %s, %s, %s, %s, NULL, NULL) \
+                    """
+
             self.cursor.execute(query, (uid, tid, tags_id, day, time))
             session_id = self.cursor.lastrowid
 
             select_query = """
-                SELECT 
-                    s.sid, s.uid, s.tid, s.tagsID, s.day, s.time,
-                    s.started, s.concluded,
-                    u.firstName as student_first_name,
-                    u.lastName as student_last_name,
-                    tu.firstName as tutor_first_name,
-                    tu.lastName as tutor_last_name,
-                    tg.tags as course
-                FROM Sessions s
-                INNER JOIN User u ON s.uid = u.uid
-                INNER JOIN Tutor t ON s.tid = t.tid
-                INNER JOIN User tu ON t.uid = tu.uid
-                INNER JOIN Tags tg ON s.tagsID = tg.tagsID
-                WHERE s.sid = %s
-            """
-            
+                           SELECT
+                               s.sid, s.uid, s.tid, s.tagsID, s.day, s.time,
+                               s.started, s.concluded,
+                               u.firstName as student_first_name,
+                               u.lastName as student_last_name,
+                               tu.firstName as tutor_first_name,
+                               tu.lastName as tutor_last_name,
+                               tg.tags as course
+                           FROM Sessions s
+                                    INNER JOIN User u ON s.uid = u.uid
+                                    INNER JOIN Tutor t ON s.tid = t.tid
+                                    INNER JOIN User tu ON t.uid = tu.uid
+                                    INNER JOIN Tags tg ON s.tagsID = tg.tagsID
+                           WHERE s.sid = %s \
+                           """
+
             self.cursor.execute(select_query, (session_id,))
             session = self.cursor.fetchone()
-            
+
             if session:
                 return {
                     'sid': session['sid'],
@@ -101,7 +101,7 @@ class GatorGuidesSessions:
                     'started': session['started'],
                     'concluded': session['concluded']
                 }
-            
+
             return None
 
         except Exception as e:
@@ -115,11 +115,11 @@ class GatorGuidesSessions:
 
         try:
             query = """
-                UPDATE Sessions
-                SET started = NOW()
-                WHERE sid = %s AND started IS NULL
-            """
-            
+                    UPDATE Sessions
+                    SET started = NOW()
+                    WHERE sid = %s AND started IS NULL \
+                    """
+
             self.cursor.execute(query, (session_id,))
             return self.cursor.rowcount > 0
 
@@ -134,11 +134,11 @@ class GatorGuidesSessions:
 
         try:
             query = """
-                UPDATE Sessions
-                SET concluded = NOW()
-                WHERE sid = %s AND concluded IS NULL
-            """
-            
+                    UPDATE Sessions
+                    SET concluded = NOW()
+                    WHERE sid = %s AND concluded IS NULL \
+                    """
+
             self.cursor.execute(query, (session_id,))
             return self.cursor.rowcount > 0
 
@@ -153,25 +153,25 @@ class GatorGuidesSessions:
 
         try:
             query = """
-                SELECT 
-                    s.sid, s.uid, s.tid, s.tagsID, s.day, s.time,
-                    s.started, s.concluded,
-                    u.firstName as student_first_name,
-                    u.lastName as student_last_name,
-                    tu.firstName as tutor_first_name,
-                    tu.lastName as tutor_last_name,
-                    tg.tags as course
-                FROM Sessions s
-                INNER JOIN User u ON s.uid = u.uid
-                INNER JOIN Tutor t ON s.tid = t.tid
-                INNER JOIN User tu ON t.uid = tu.uid
-                INNER JOIN Tags tg ON s.tagsID = tg.tagsID
-                WHERE s.sid = %s
-            """
-            
+                    SELECT
+                        s.sid, s.uid, s.tid, s.tagsID, s.day, s.time,
+                        s.started, s.concluded,
+                        u.firstName as student_first_name,
+                        u.lastName as student_last_name,
+                        tu.firstName as tutor_first_name,
+                        tu.lastName as tutor_last_name,
+                        tg.tags as course
+                    FROM Sessions s
+                             INNER JOIN User u ON s.uid = u.uid
+                             INNER JOIN Tutor t ON s.tid = t.tid
+                             INNER JOIN User tu ON t.uid = tu.uid
+                             INNER JOIN Tags tg ON s.tagsID = tg.tagsID
+                    WHERE s.sid = %s \
+                    """
+
             self.cursor.execute(query, (session_id,))
             session = self.cursor.fetchone()
-            
+
             if session:
                 return {
                     'sid': session['sid'],
@@ -189,7 +189,7 @@ class GatorGuidesSessions:
                     'started': session['started'],
                     'concluded': session['concluded']
                 }
-            
+
             return None
 
         except Exception as e:
@@ -203,23 +203,23 @@ class GatorGuidesSessions:
 
         try:
             query = """
-                SELECT 
-                    s.sid, s.uid, s.tid, s.tagsID, s.day, s.time,
-                    s.started, s.concluded,
-                    tu.firstName as tutor_first_name,
-                    tu.lastName as tutor_last_name,
-                    tg.tags as course
-                FROM Sessions s
-                INNER JOIN Tutor t ON s.tid = t.tid
-                INNER JOIN User tu ON t.uid = tu.uid
-                INNER JOIN Tags tg ON s.tagsID = tg.tagsID
-                WHERE s.uid = %s
-                ORDER BY s.sid DESC
-            """
-            
+                    SELECT
+                        s.sid, s.uid, s.tid, s.tagsID, s.day, s.time,
+                        s.started, s.concluded,
+                        tu.firstName as tutor_first_name,
+                        tu.lastName as tutor_last_name,
+                        tg.tags as course
+                    FROM Sessions s
+                             INNER JOIN Tutor t ON s.tid = t.tid
+                             INNER JOIN User tu ON t.uid = tu.uid
+                             INNER JOIN Tags tg ON s.tagsID = tg.tagsID
+                    WHERE s.uid = %s
+                    ORDER BY s.sid DESC \
+                    """
+
             self.cursor.execute(query, (uid,))
             sessions = self.cursor.fetchall()
-            
+
             results = []
             for session in sessions:
                 results.append({
@@ -234,7 +234,7 @@ class GatorGuidesSessions:
                     'started': session['started'],
                     'concluded': session['concluded']
                 })
-            
+
             return results
 
         except Exception as e:
@@ -248,22 +248,22 @@ class GatorGuidesSessions:
 
         try:
             query = """
-                SELECT 
-                    s.sid, s.uid, s.tid, s.tagsID, s.day, s.time,
-                    s.started, s.concluded,
-                    u.firstName as student_first_name,
-                    u.lastName as student_last_name,
-                    tg.tags as course
-                FROM Sessions s
-                INNER JOIN User u ON s.uid = u.uid
-                INNER JOIN Tags tg ON s.tagsID = tg.tagsID
-                WHERE s.tid = %s
-                ORDER BY s.sid DESC
-            """
-            
+                    SELECT
+                        s.sid, s.uid, s.tid, s.tagsID, s.day, s.time,
+                        s.started, s.concluded,
+                        u.firstName as student_first_name,
+                        u.lastName as student_last_name,
+                        tg.tags as course
+                    FROM Sessions s
+                             INNER JOIN User u ON s.uid = u.uid
+                             INNER JOIN Tags tg ON s.tagsID = tg.tagsID
+                    WHERE s.tid = %s
+                    ORDER BY s.sid DESC \
+                    """
+
             self.cursor.execute(query, (tid,))
             sessions = self.cursor.fetchall()
-            
+
             results = []
             for session in sessions:
                 results.append({
@@ -278,12 +278,25 @@ class GatorGuidesSessions:
                     'started': session['started'],
                     'concluded': session['concluded']
                 })
-            
+
             return results
 
         except Exception as e:
             logger.error(f"Get tutor sessions error: {e}", exc_info=True)
             return []
+
+    def delete_session(self, sid: int) -> bool:
+        if not self._ensure_connection():
+            logger.error("Delete session failed: database connection unavailable")
+            return False
+
+        try:
+            query = "DELETE FROM Sessions WHERE sid = %s"
+            self.cursor.execute(query, (sid,))
+            return self.cursor.rowcount > 0
+        except Exception as e:
+            logger.error(f"Delete session error: {e}", exc_info=True)
+            return False
 
     def close(self):
         try:
