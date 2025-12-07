@@ -1,411 +1,416 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { registerUser, createTutorProfile, addTutorTags, getCourseTagIds, type RegisterPayload } from '$lib/api';
 
-    // Form state
-    let formData = $state({
-        //personal information
+    let form = $state({
         firstName: '',
         lastName: '',
         email: '',
         phone: '',
         studentId: '',
-
-        //account security
         password: '',
         confirmPassword: '',
-
-        //tutor information
         major: '',
         gpa: '',
         graduationYear: '',
-        bio: '',
-
-        //subjects
+        shortBio: '',
         subjects: [] as string[],
-
-        // agreement
         agreeToTerms: false
     });
 
     let currentSubject = $state('');
     let errorMessage = $state('');
     let successMessage = $state('');
+    let isSubmitting = $state(false);
 
-    //temp
-    const availableSubjects = [
+    const suggestedSubjects = [
         'CSC 101',
         'CSC 210',
         'CSC 220',
+        'CSC 230',
+        'CSC 256',
+        'CSC 340',
         'CSC 413',
         'CSC 415',
         'CSC 648',
         'MATH 226',
         'MATH 227',
-        'PHYS 220',
-        'PHYS 230',
-        'CHEM 115',
-        'BIOL 230'
+        'MATH 228'
     ];
 
     function addSubject() {
-        if (currentSubject && !formData.subjects.includes(currentSubject)) {
-            formData.subjects = [...formData.subjects, currentSubject];
-            currentSubject = '';
+        const trimmed = currentSubject.trim();
+        if (trimmed && !form.subjects.includes(trimmed)) {
+            form.subjects = [...form.subjects, trimmed];
         }
+        currentSubject = '';
     }
 
     function removeSubject(subject: string) {
-        formData.subjects = formData.subjects.filter((s) => s !== subject);
+        form.subjects = form.subjects.filter((s) => s !== subject);
     }
 
     function validateForm(): boolean {
         errorMessage = '';
 
-        if (!formData.firstName || !formData.lastName) {
-            errorMessage = 'Please enter your full name';
+        if (!form.firstName || !form.lastName) {
+            errorMessage = 'Please enter your first and last name.';
             return false;
         }
 
-        if (!formData.email.includes('@')) {
-            errorMessage = 'Please enter a valid email address';
+        if (!form.email.endsWith('@sfsu.edu')) {
+            errorMessage = 'Please use a valid SFSU email (@sfsu.edu).';
             return false;
         }
 
-        if (!formData.studentId) {
-            errorMessage = 'Please enter your student ID';
+        if (!form.studentId) {
+            errorMessage = 'Student ID is required.';
             return false;
         }
 
-        if (formData.password.length < 8) {
-            errorMessage = 'Password must be at least 8 characters long';
+        if (!form.major) {
+            errorMessage = 'Please enter your major.';
             return false;
         }
 
-        if (formData.password !== formData.confirmPassword) {
-            errorMessage = 'Passwords do not match';
+        if (!form.gpa) {
+            errorMessage = 'Please enter your GPA.';
+            return false;
+        } else {
+            const gpaNum = parseFloat(form.gpa);
+            if (Number.isNaN(gpaNum) || gpaNum < 0 || gpaNum > 4.0) {
+                errorMessage = 'Please enter a valid GPA between 0.0 and 4.0.';
+                return false;
+            }
+        }
+
+        if (form.subjects.length === 0) {
+            errorMessage = 'Please add at least one subject you can tutor.';
             return false;
         }
 
-        if (!formData.major || !formData.gpa) {
-            errorMessage = 'Please complete the tutor information section';
+        if (form.password.length < 8) {
+            errorMessage = 'Password must be at least 8 characters long.';
             return false;
         }
 
-        const gpaNum = parseFloat(formData.gpa);
-        if (isNaN(gpaNum) || gpaNum < 0 || gpaNum > 4.0) {
-            errorMessage = 'Please enter a valid GPA between 0.0 and 4.0';
+        if (form.password !== form.confirmPassword) {
+            errorMessage = 'Passwords do not match.';
             return false;
         }
 
-        if (formData.subjects.length === 0) {
-            errorMessage = 'Please add at least one subject you can tutor';
-            return false;
-        }
-
-        if (!formData.agreeToTerms) {
-            errorMessage = 'Please agree to the terms and conditions';
+        if (!form.agreeToTerms) {
+            errorMessage = 'You must agree to the terms and conditions.';
             return false;
         }
 
         return true;
     }
 
-    function handleSubmit() {
-        if (!validateForm()) {
-            return;
+    async function handleSubmit(event: SubmitEvent) {
+        event.preventDefault();
+
+        if (!validateForm()) return;
+
+        isSubmitting = true;
+        errorMessage = '';
+        successMessage = '';
+
+        try {
+            //Pack tutor-specific info into bio
+            const tutorBio = `${form.shortBio || ''}\n\nMajor: ${form.major}\nGPA: ${form.gpa}\nGraduation: ${form.graduationYear || 'N/A'}\nStudent ID: ${form.studentId}${form.phone ? `\nPhone: ${form.phone}` : ''}`;
+
+            //Register user account
+            console.log('Step 1: Registering user...');
+            const registerResponse = await registerUser({
+                firstName: form.firstName,
+                lastName: form.lastName,
+                email: form.email,
+                password: form.password,
+                bio: tutorBio
+            });
+
+            console.log('User registered:', registerResponse);
+
+            //Auto-login to get session token
+            console.log('Step 2: Auto-logging in...');
+            const loginResponse = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: form.email,
+                    password: form.password
+                })
+            });
+
+            if (!loginResponse.ok) {
+                throw new Error('Auto-login failed after registration');
+            }
+
+            const loginData = await loginResponse.json();
+            const sessionID = loginData.sessionID;
+            const uid = loginData.user.uid;
+
+            console.log('Auto-login successful, uid:', uid);
+
+            //Create tutor profile
+            console.log('Step 3: Creating tutor profile...');
+            const tutorResponse = await createTutorProfile(uid, sessionID);
+            console.log('Tutor profile created:', tutorResponse);
+
+            //Add subject tags
+            console.log('Step 4: Adding subject tags...');
+            const tagIds = getCourseTagIds(form.subjects);
+            if (tagIds.length > 0) {
+                await addTutorTags(tutorResponse.tid, tagIds, sessionID);
+                console.log('Tags added successfully');
+            } else {
+                console.warn('No valid tag IDs found for subjects:', form.subjects);
+            }
+
+            successMessage = 'Tutor registration successful! Redirecting to login...';
+
+            setTimeout(() => {
+                goto('/login');
+            }, 2000);
+
+        } catch (err: any) {
+            console.error('Registration error:', err);
+            errorMessage = err?.message ?? 'Tutor registration failed. Please try again.';
+        } finally {
+            isSubmitting = false;
         }
-
-        // TODO: Send data to backend API
-        console.log('Form submitted:', formData);
-
-        successMessage = 'Registration successful! Redirecting to login...';
-
-        setTimeout(() => {
-            goto('/');
-        }, 2000);
     }
 </script>
 
-<div class="min-h-screen bg-neutral-100 py-8">
-    <div class="mx-auto max-w-4xl px-4">
-        <!--header -->
-        <div class="mb-8 text-center">
-            <h1 class="mb-2 text-4xl font-bold text-[#231161]">Tutor Registration</h1>
-            <p class="text-gray-600">Join our community and help fellow students succeed</p>
-        </div>
+<div class="min-h-screen bg-neutral-100 flex items-center justify-center p-6">
+    <div class="w-full max-w-3xl rounded-2xl bg-white p-8 shadow-xl border border-gray-100">
+        <h1 class="mb-2 text-3xl font-bold text-[#231161] text-center">Apply as a tutor</h1>
+        <p class="mb-6 text-sm text-gray-600 text-center">
+            Share your skills with other Gators. Fill out your academic info so we can verify you.
+        </p>
 
-        <!--Form-->
-        <form
-                onsubmit={(e) => {
-				e.preventDefault();
-				handleSubmit();
-			}}
-                class="rounded-2xl bg-white p-8 shadow-lg"
-        >
-            <!--personal informationn -->
-            <section class="mb-8">
-                <h2 class="mb-4 text-2xl font-bold text-gray-800">Personal Information</h2>
-                <div class="grid gap-4 md:grid-cols-2">
-                    <div>
-                        <label for="firstName" class="mb-2 block text-sm font-medium text-gray-700">
-                            First Name <span class="text-red-500">*</span>
-                        </label>
-                        <input
-                                id="firstName"
-                                type="text"
-                                bind:value={formData.firstName}
-                                required
-                                class="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-opacity-50"
-                        />
-                    </div>
-                    <div>
-                        <label for="lastName" class="mb-2 block text-sm font-medium text-gray-700">
-                            Last Name <span class="text-red-500">*</span>
-                        </label>
-                        <input
-                                id="lastName"
-                                type="text"
-                                bind:value={formData.lastName}
-                                required
-                                class="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-opacity-50"
-                        />
-                    </div>
-                    <div>
-                        <label for="email" class="mb-2 block text-sm font-medium text-gray-700">
-                            Email Address <span class="text-red-500">*</span>
-                        </label>
-                        <input
-                                id="email"
-                                type="email"
-                                bind:value={formData.email}
-                                placeholder="you@sfsu.edu"
-                                required
-                                class="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-opacity-50"
-                        />
-                    </div>
-                    <div>
-                        <label for="phone" class="mb-2 block text-sm font-medium text-gray-700"
-                        >Phone Number</label
-                        >
-                        <input
-                                id="phone"
-                                type="tel"
-                                bind:value={formData.phone}
-                                placeholder="(123) 456-7890"
-                                class="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-opacity-50"
-                        />
-                    </div>
-                    <div class="md:col-span-2">
-                        <label for="studentId" class="mb-2 block text-sm font-medium text-gray-700">
-                            Student ID <span class="text-red-500">*</span>
-                        </label>
-                        <input
-                                id="studentId"
-                                type="text"
-                                bind:value={formData.studentId}
-                                placeholder="920123456"
-                                required
-                                class="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-opacity-50"
-                        />
-                    </div>
+        {#if errorMessage}
+            <div class="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 border border-red-200">
+                {errorMessage}
+            </div>
+        {/if}
+
+        {#if successMessage}
+            <div class="mb-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 border border-green-200">
+                {successMessage}
+            </div>
+        {/if}
+
+        <form class="space-y-5" on:submit|preventDefault={handleSubmit}>
+            <!-- Name -->
+            <div class="grid gap-4 md:grid-cols-2">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">First name</label>
+                    <input
+                            type="text"
+                            bind:value={form.firstName}
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
+                            required
+                    />
                 </div>
-            </section>
-
-            <!--account security section -->
-            <section class="mb-8">
-                <h2 class="mb-4 text-2xl font-bold text-gray-800">Account Security</h2>
-                <div class="grid gap-4 md:grid-cols-2">
-                    <div>
-                        <label for="password" class="mb-2 block text-sm font-medium text-gray-700">
-                            Password <span class="text-red-500">*</span>
-                        </label>
-                        <input
-                                id="password"
-                                type="password"
-                                bind:value={formData.password}
-                                placeholder="At least 8 characters"
-                                required
-                                class="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-opacity-50"
-                        />
-                    </div>
-                    <div>
-                        <label for="confirmPassword" class="mb-2 block text-sm font-medium text-gray-700">
-                            Confirm Password <span class="text-red-500">*</span>
-                        </label>
-                        <input
-                                id="confirmPassword"
-                                type="password"
-                                bind:value={formData.confirmPassword}
-                                placeholder="Re-enter password"
-                                required
-                                class="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-opacity-50"
-                        />
-                    </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Last name</label>
+                    <input
+                            type="text"
+                            bind:value={form.lastName}
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
+                            required
+                    />
                 </div>
-            </section>
+            </div>
 
-            <!--tutor information section -->
-            <section class="mb-8">
-                <h2 class="mb-4 text-2xl font-bold text-gray-800">Tutor Information</h2>
-                <div class="grid gap-4 md:grid-cols-2">
-                    <div>
-                        <label for="major" class="mb-2 block text-sm font-medium text-gray-700">
-                            Major <span class="text-red-500">*</span>
-                        </label>
-                        <input
-                                id="major"
-                                type="text"
-                                bind:value={formData.major}
-                                placeholder="Computer Science"
-                                required
-                                class="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-opacity-50"
-                        />
-                    </div>
-                    <div>
-                        <label for="gpa" class="mb-2 block text-sm font-medium text-gray-700">
-                            GPA <span class="text-red-500">*</span>
-                        </label>
-                        <input
-                                id="gpa"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                max="4"
-                                bind:value={formData.gpa}
-                                placeholder="3.50"
-                                required
-                                class="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-opacity-50"
-                        />
-                    </div>
-                    <div class="md:col-span-2">
-                        <label for="graduationYear" class="mb-2 block text-sm font-medium text-gray-700"
-                        >Expected Graduation Year</label
-                        >
-                        <input
-                                id="graduationYear"
-                                type="text"
-                                bind:value={formData.graduationYear}
-                                placeholder="2026"
-                                class="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-opacity-50"
-                        />
-                    </div>
-                    <div class="md:col-span-2">
-                        <label for="bio" class="mb-2 block text-sm font-medium text-gray-700"
-                        >Bio / Teaching Philosophy</label
-                        >
-                        <textarea
-                                id="bio"
-                                bind:value={formData.bio}
-                                rows="4"
-                                placeholder="Tell us about your tutoring experience and teaching style..."
-                                class="w-full rounded-lg border border-gray-300 px-4 py-2.5 focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-opacity-50"
-                        ></textarea>
-                    </div>
+            <!-- Contact -->
+            <div class="grid gap-4 md:grid-cols-2">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">SFSU Email</label>
+                    <input
+                            type="email"
+                            bind:value={form.email}
+                            placeholder="your.name@sfsu.edu"
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
+                            required
+                    />
                 </div>
-            </section>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Phone (optional)</label>
+                    <input
+                            type="tel"
+                            bind:value={form.phone}
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
+                    />
+                </div>
+            </div>
 
-            <!--subjects section -->
-            <section class="mb-8">
-                <h2 class="mb-4 text-2xl font-bold text-gray-800">
-                    Subjects <span class="text-red-500">*</span>
-                </h2>
-                <div class="mb-4 flex gap-2">
-                    <select
+            <!-- Student & academic info -->
+            <div class="grid gap-4 md:grid-cols-3">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Student ID</label>
+                    <input
+                            type="text"
+                            bind:value={form.studentId}
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
+                            required
+                    />
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Major</label>
+                    <input
+                            type="text"
+                            bind:value={form.major}
+                            placeholder="e.g. Computer Science"
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
+                            required
+                    />
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">GPA</label>
+                    <input
+                            type="text"
+                            bind:value={form.gpa}
+                            placeholder="e.g. 3.5"
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
+                            required
+                    />
+                </div>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Expected graduation year (optional)</label>
+                    <input
+                            type="text"
+                            bind:value={form.graduationYear}
+                            placeholder="e.g. 2027"
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
+                    />
+                </div>
+            </div>
+
+            <!-- Subjects -->
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Subjects you can tutor</label>
+                <div class="flex flex-wrap items-center gap-2 mb-2">
+                    <input
+                            type="text"
                             bind:value={currentSubject}
-                            class="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-opacity-50"
-                    >
-                        <option value="">Select a subject</option>
-                        {#each availableSubjects as subject}
-                            <option value={subject}>{subject}</option>
-                        {/each}
-                    </select>
+                            placeholder="e.g. CSC 413"
+                            class="flex-1 min-w-[160px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
+                            on:keydown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                addSubject();
+                            }
+                        }}
+                    />
                     <button
                             type="button"
-                            onclick={addSubject}
-                            class="rounded-lg bg-[#231161] px-6 py-2.5 font-medium text-white hover:bg-[#1a0d4a]"
+                            on:click={addSubject}
+                            class="rounded-lg bg-[#231161] px-3 py-2 text-xs font-semibold text-white hover:bg-[#2d1982]"
                     >
                         Add
                     </button>
                 </div>
-                {#if formData.subjects.length > 0}
-                    <div class="flex flex-wrap gap-2">
-                        {#each formData.subjects as subject}
-                            <div class="flex items-center gap-2 rounded-full bg-[#231161] px-4 py-2 text-white">
-                                <span>{subject}</span>
-                                <button
-                                        type="button"
-                                        onclick={() => removeSubject(subject)}
-                                        class="rounded-full hover:bg-white hover:bg-opacity-20"
-                                        aria-label="Remove {subject}"
-                                >
+                {#if suggestedSubjects.length}
+                    <p class="mb-2 text-xs text-gray-500">
+                        Quick add:
+                        {#each suggestedSubjects as subj}
+                            <button
+                                    type="button"
+                                    on:click={() => {
+                                    currentSubject = subj;
+                                    addSubject();
+                                }}
+                                    class="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-[11px] text-gray-700 hover:bg-gray-200 mr-1 mt-1"
+                            >
+                                + {subj}
+                            </button>
+                        {/each}
+                    </p>
+                {/if}
+                {#if form.subjects.length > 0}
+                    <div class="mt-1 flex flex-wrap gap-2">
+                        {#each form.subjects as subject}
+                            <span class="inline-flex items-center gap-1 rounded-full bg-[#231161]/10 px-3 py-1 text-xs text-[#231161]">
+                                {subject}
+                                <button type="button" on:click={() => removeSubject(subject)} class="text-[10px]">
                                     ✕
                                 </button>
-                            </div>
+                            </span>
                         {/each}
                     </div>
                 {:else}
-                    <p class="text-sm text-gray-500">No subjects added yet</p>
+                    <p class="mt-1 text-xs text-gray-500">Add at least one subject you feel confident tutoring.</p>
                 {/if}
-            </section>
+            </div>
 
-            <!--terms and conditions -->
-            <section class="mb-6">
-                <label class="flex items-start gap-3">
+            <!-- Bio -->
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Short tutor bio (optional)</label>
+                <textarea
+                        bind:value={form.shortBio}
+                        rows={3}
+                        placeholder="Tell students about your experience, courses you've excelled in, and how you like to help."
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
+                />
+            </div>
+
+            <!-- Password -->
+            <div class="grid gap-4 md:grid-cols-2">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Password</label>
                     <input
-                            type="checkbox"
-                            bind:checked={formData.agreeToTerms}
+                            type="password"
+                            bind:value={form.password}
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
                             required
-                            class="mt-1 h-5 w-5 rounded border-gray-300 text-[#231161] focus:ring-[#231161]"
                     />
-                    <span class="text-sm text-gray-700">
-						I agree to the <a href="/terms" class="text-[#231161] hover:underline"
-                    >Terms and Conditions</a
-                    >
-						and
-						<a href="/privacy" class="text-[#231161] hover:underline">Privacy Policy</a>
-						<span class="text-red-500">*</span>
-					</span>
-                </label>
-            </section>
-
-            <!--messages -->
-            {#if errorMessage}
-                <div class="mb-4 rounded-lg bg-red-50 p-4 text-red-600">{errorMessage}</div>
-            {/if}
-
-            {#if successMessage}
-                <div class="mb-4 rounded-lg bg-green-50 p-4 text-green-600">{successMessage}</div>
-            {/if}
-
-            <!--submit button -->
-            <div class="flex gap-4">
-                <a
-                        href="/"
-                        class="flex-1 rounded-lg border-2 border-gray-300 px-6 py-3 text-center font-semibold text-gray-700 transition-colors hover:bg-gray-50"
-                >
-                    Cancel
-                </a>
-                <button
-                        type="submit"
-                        class="flex-1 rounded-lg bg-[#231161] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#1a0d4a] focus:outline-none focus:ring-2 focus:ring-[#231161] focus:ring-offset-2"
-                >
-                    Register as Tutor
-                </button>
+                    <p class="mt-1 text-xs text-gray-500">At least 8 characters.</p>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Confirm password</label>
+                    <input
+                            type="password"
+                            bind:value={form.confirmPassword}
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
+                            required
+                    />
+                </div>
             </div>
 
-            <!--login-->
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-600">
-                    Already have an account?
-                    <a href="/login" class="font-medium text-[#231161] hover:underline">Sign in</a>
-                </p>
-                <p class="mt-2 text-sm text-gray-600">
-                    Looking to find a tutor instead?
-                    <a href="/register" class="font-medium text-[#231161] hover:underline"
-                    >Student Registration</a
-                    >
-                </p>
-            </div>
+            <label class="mt-2 flex items-start gap-2 text-xs text-gray-600">
+                <input
+                        type="checkbox"
+                        bind:checked={form.agreeToTerms}
+                        class="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#231161] focus:ring-[#231161]"
+                />
+                <span>
+                    I certify that the information above is accurate and understand that my SFSU academic record may be
+                    used to verify my eligibility to tutor.
+                </span>
+            </label>
+
+            <button
+                    type="submit"
+                    class="mt-4 w-full rounded-lg bg-[#231161] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#2d1982] disabled:bg-[#231161]/60"
+                    disabled={isSubmitting}
+            >
+                {#if isSubmitting}
+                    Submitting application...
+                {:else}
+                    Submit tutor application
+                {/if}
+            </button>
         </form>
+
+        <p class="mt-4 text-center text-xs text-gray-600">
+            Already have an account?
+            <a href="/login" class="text-[#231161] hover:underline">Sign in</a>.
+        </p>
     </div>
 </div>

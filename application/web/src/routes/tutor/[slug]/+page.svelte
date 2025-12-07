@@ -51,113 +51,82 @@
 
  <script lang="ts">
 	import { page } from '$app/state';
-    // Var
-    let isTutor = true;
 
-    // interface Profile {
-    //     photo: string;
-    //     name: string;
-    //     tags: string[]; 
-    //     bio: string;
-    // }
+    // Check 
+    let isTutor = $state(true); 
 
-    // interface Session {
-    //     sId: number;
-    //     date: string;
-    //     timeStart: string;
-    //     timeEnd: string;
-    //     location?: string;
-    // }
+    // Single instance of tutor
+    interface Profile {
+        photo: string;
+        name: string;
+        email: string;
+        tags: string[]; 
+        bio: string;
+    }
 
-    // interface Contacts {
-    //     email: string;
-    //     phone: number;
-    // }
+    // Should be an array to hold tutor's posted sessions
+    interface Session {
+        sId: number;
+        date: string;
+        timeStart: string;
+        timeEnd: string;
+        tags?: string;
+        location?: string;
+    }
 
-    // interface Review {
-    //     rId: number;
-    //     rating: number;
-    //     feedback: string;
-    // }
-
-    // interface TutorData {
-    //     profile: Profile;
-    //     sessions: Session[]; 
-    //     contacts: Contacts;
-    //     reviews: Review[];
-    // }
+    // Should be an array to hold reviews of tutor
+    interface Review {
+        rId: number;
+        user: string;
+        rating: number;
+        feedback: string;
+        date: Date;
+    }
     
-    // Temp mock data
-    const tutorData = {
-        profile: {
-            name: "Jane Doe",
-            photo: "https://grad.sfsu.edu/sites/default/files/images/new-student_2.jpg",
-            tags: ["Computer Science", "Physics"],
-            bio: "Hi, I'm Jane. My academic life is dedicated to two things: understanding how the universe works (Physics) and learning how to build powerful tools (Computer Science). I enjoy the challenge of bridging these two domains, constantly striving to use my technical skills to make sense of the world and contribute something new to it.",
-        },
-        sessions: [
-            {
-                sId: 1,
-                date: "Tuesday, Nov 18th",
-                timeStart: "14:00",
-                timeEnd: "15:30",
-                location: "J. Paul Leonard Library"
-            },
-            {
-                sId: 2,
-                date: "Thursday, Nov 20th",
-                timeStart: "12:00",
-                timeEnd: "13:00",
-                location: "Cesar Chavez Student Center"
-            },
-            {
-                sId: 3,
-                date: "Friday, Nov 21st",
-                timeStart: "10:00",
-                timeEnd: "11:00",
-                location: "Burk Hall"
-            }
-        ],
-        contacts: {
-            email: "mockstudent1@sfsu.edu",
-            phone: "(123)456-7890",
-        },
-        reviews: [
-            {
-                rId: 1,
-                studentName: "Alex R.",
-                rating: 4.5,
-                feedback: "Jane is an amazing tutor! She helped me understand complex Physics concepts easily. Highly recommend!",
-				date: "5th, Dec",
-            },
-            {
-                rId: 2,
-                studentName: "Sam K.",
-                rating: 4,
-                feedback: "Great session on data structures. Jane is very patient and knowledgeable in Computer Science. A bit hard to book a time, but worth it.",
-				date: "5th, Dec",
-			},
-            {
-                rId: 3,
-                studentName: "Taylor M.",
-                rating: 5,
-                feedback: "Excellent tutor for my introductory CS class. She clarified my code debugging issues very quickly!",
-				date: "5th, Dec",
-			}
-        ]
-    };
+    // Stores full tutor info 
+    let profile = $state<Profile>({
+        photo: '',
+        name: '',
+        email: '',
+        tags: [],
+        bio: ''
+    });
+    let sessions = $state([] as Session[]);
+    let reviews = $state([] as Review[])
 
-    const { profile, sessions, contacts, reviews } = tutorData;
+    // Temp id to pull data
+    const tutorId = page.params.slug;
 
-    // Pull tutor profile
-    function loadTutorPage () {
-        
+    // Pull full tutor info (profile, session, % review)
+    async function loadTutorPage () {
+        // profile pull 
+        try {
+            // Pull tutor profile 
+			const pResponse = await fetch(`/api/tutors/${encodeURIComponent(tutorId)}`);
+			const pData = await pResponse.json();
+			profile = pData as Profile;
+
+            // Pull tutor's sessions
+            const sResponse = await fetch(`/api/tutors/${encodeURIComponent(tutorId)}/sessions`);
+			const sData = await sResponse.json();
+			sessions = sData as Session[];
+
+            // Pull tutor's reviews TODO
+            const rResponse = await fetch(`/api/tutors/${encodeURIComponent(tutorId)}`);
+			const rData = await rResponse.json();
+			reviews = rData as Review[];
+
+		} catch (error) {
+			console.error('Search failed:', error);
+        }
     }
 
     // Removes session from availability and adds to user session 
     function scheduleSession(sessionId: number) {
         alert(`Session added`);
     }
+
+    loadTutorPage();
 </script>
 
 <!--Tutor page-->
@@ -175,7 +144,7 @@
             <!--Tutor name, tags, and bio card-->
             <div class="mb-8 w-full rounded-2xl bg-white p-4 drop-shadow-lg">
                 <h2 class="text-2xl underline text-center">{profile.name}</h2>
-                <p class="text-lg text-center">{contacts.email}</p>
+                <p class="text-lg text-center">{profile.email}</p>
                 <div class="flex flex-wrap justify-center gap-2">
                     {#each profile.tags as tag}
                         <span class="bg-[#231161] text-white text-sm px-2 py-1 rounded shadow-md">
@@ -193,7 +162,7 @@
                     <div class="mb-4 rounded-2xl p-3 shadow-sm">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-2xl bg-green-500 px-3 py-1">{review.rating}</span>
-                            <span class="font-bold text-xl">{review.studentName}</span>
+                            <span class="font-bold text-xl">{review.user}</span>
                         </div>
 						<div class="mb-2 flex flex-wrap gap-2">
 							{#each profile.tags as tag}
@@ -232,7 +201,7 @@
                     <div class="flex w-full justify-end items-end md:w-3/12">
                         <button 
                             class="bg-[#231161] hover:bg-[#2d1982] text-white py-2 px-3 rounded"
-                            on:click={() => scheduleSession(session.sId)}
+                            onclick={() => scheduleSession(session.sId)}
                         > <!--TODO add schdule button function-->
                             Schedule
                         </button>

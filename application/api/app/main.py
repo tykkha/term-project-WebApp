@@ -1,8 +1,8 @@
 from typing import Union
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import search, sessions, users, tutors, messages, posts 
-#uploads
+from routes import search, sessions, users, tutors, messages, posts
+
 from db.Auth import GatorGuidesAuth
 from core.config import settings
 import logging
