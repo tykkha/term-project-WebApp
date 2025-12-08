@@ -160,6 +160,7 @@
             </form>
         </div>
 
+        <!--TEST cuz console dont work else im stupid-->
         {#if submittedData}
             <div class="w-full rounded-2xl bg-white p-4 drop-shadow-lg md:w-6/12">
                 <h2 class="text-3xl underline mb-4 text-green-700">✅ Submission Successful!</h2>

@@ -44,6 +44,7 @@
 
             // Map backend SearchResult -> local Tutor shape
             searchResults = data.map((t) => ({
+                tid: t.tid,
                 name: t.name,
                 rating: t.rating,
                 email: t.email,
