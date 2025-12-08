@@ -11,6 +11,7 @@
     let value = $state([parseDate(formatted)]);
 
     interface Tutor {
+		tid: number;
         name: string;
         rating?: number;
         email?: string;
@@ -114,7 +115,9 @@
                 {#each searchResults as tutor}
                     <div class="rounded-lg bg-white p-6 shadow-md">
                         <div class="mb-4 flex items-center justify-between">
-                            <h3 class="text-xl font-semibold">{tutor.name}</h3>
+							<a href={`/tutor/${tutor.tid}`} class="text-xl font-semibold text-[#231161] hover:underline">
+                                <h3>{tutor.name}</h3>
+                            </a>
                             {#if tutor.rating !== undefined}
 								<span class="rounded-full bg-[#231161]/10 px-3 py-1 text-sm text-[#231161]">
 									★ {tutor.rating}
