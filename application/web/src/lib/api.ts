@@ -17,14 +17,12 @@ export const COURSE_TAG_MAP: { [key: string]: number } = {
 	'PHYS 220': 10,
 	'PHYS 230': 10,
 	'CHEM 115': 11,
-	'BIOL 230': 12,
+	'BIOL 230': 12
 };
 
 // Helper function to get tag IDs from course names
 export function getCourseTagIds(courses: string[]): number[] {
-	return courses
-		.map(course => COURSE_TAG_MAP[course])
-		.filter(id => id !== undefined);
+	return courses.map((course) => COURSE_TAG_MAP[course]).filter((id) => id !== undefined);
 }
 
 /* ---------- SEARCH ---------- */
@@ -286,13 +284,13 @@ export async function createTutorProfile(uid: number, sessionID: string): Promis
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			'Authorization': `Bearer ${sessionID}`,
+			Authorization: `Bearer ${sessionID}`
 		},
 		body: JSON.stringify({
 			uid: uid,
 			rating: 0.0,
 			status: 'available'
-		}),
+		})
 	});
 
 	if (!response.ok) {
@@ -304,14 +302,18 @@ export async function createTutorProfile(uid: number, sessionID: string): Promis
 }
 
 // Add tags/subjects to tutor profile
-export async function addTutorTags(tid: number, tagIds: number[], sessionID: string): Promise<void> {
+export async function addTutorTags(
+	tid: number,
+	tagIds: number[],
+	sessionID: string
+): Promise<void> {
 	const response = await fetch(`${API_BASE}/tutors/${tid}/tags`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			'Authorization': `Bearer ${sessionID}`,
+			Authorization: `Bearer ${sessionID}`
 		},
-		body: JSON.stringify({ tagIds }),
+		body: JSON.stringify({ tagIds })
 	});
 
 	if (!response.ok) {
@@ -326,4 +328,56 @@ export async function getTopTutors(): Promise<any[]> {
 		return [];
 	}
 	return res.json();
+}
+
+/* ---------- USER PROFILE UPDATES ---------- */
+
+export interface UpdateUserPayload {
+	firstName?: string;
+	lastName?: string;
+	profilePicture?: string;
+	bio?: string;
+}
+
+export async function updateUser(uid: number, payload: UpdateUserPayload): Promise<void> {
+	const res = await authFetch(`${API_BASE}/users/${uid}`, {
+		method: 'PUT',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(payload)
+	});
+
+	if (!res.ok) {
+		let errMsg = 'Failed to update profile';
+		try {
+			const err = await res.json();
+			if (err?.detail) errMsg = err.detail;
+		} catch {
+			/* ignore */
+		}
+		throw new Error(errMsg);
+	}
+}
+
+export async function uploadProfilePicture(uid: number, file: File): Promise<string> {
+	const formData = new FormData();
+	formData.append('file', file);
+
+	const res = await authFetch(`${API_BASE}/users/${uid}/profile-picture`, {
+		method: 'POST',
+		body: formData
+	});
+
+	if (!res.ok) {
+		let errMsg = 'Failed to upload profile picture';
+		try {
+			const err = await res.json();
+			if (err?.detail) errMsg = err.detail;
+		} catch {
+			/* ignore */
+		}
+		throw new Error(errMsg);
+	}
+
+	const data = await res.json();
+	return data.profilePicture;
 }
