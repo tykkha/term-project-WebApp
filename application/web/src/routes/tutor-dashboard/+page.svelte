@@ -496,7 +496,9 @@
 			<div class="space-y-4">
 				<!-- Profile Picture -->
 				<div>
-					<label class="mb-2 block text-sm font-medium text-gray-700"> Profile Picture </label>
+					<label for="profile-picture-upload" class="mb-2 block text-sm font-medium text-gray-700">
+						Profile Picture
+					</label>
 					{#if editForm.profilePicture}
 						<div class="mb-3">
 							<img

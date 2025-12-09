@@ -788,7 +788,9 @@
 			<div class="space-y-4">
 				<!-- Profile Picture -->
 				<div>
-					<label class="mb-2 block text-sm font-medium text-gray-700"> Profile Picture </label>
+					<label for="profile-picture-input" class="mb-2 block text-sm font-medium text-gray-700">
+						Profile Picture
+					</label>
 					{#if editForm.profilePicture}
 						<div class="mb-3">
 							<img
@@ -799,6 +801,7 @@
 						</div>
 					{/if}
 					<input
+						id="profile-picture-input"
 						type="file"
 						accept="image/*"
 						disabled={uploadingPhoto || isEditSubmitting}
@@ -900,7 +903,9 @@
 
 			<div class="space-y-4">
 				<div>
-					<label class="mb-2 block text-sm font-medium text-gray-700">Rating</label>
+					<label for="review-rating" class="mb-2 block text-sm font-medium text-gray-700"
+						>Rating</label
+					>
 					<div class="flex gap-2">
 						{#each [1, 2, 3, 4, 5] as star}
 							<button

@@ -216,12 +216,15 @@
 			</div>
 		{/if}
 
-		<form class="space-y-5" on:submit|preventDefault={handleSubmit}>
+		<form class="space-y-5" onsubmit={handleSubmit}>
 			<!-- Name -->
 			<div class="grid gap-4 md:grid-cols-2">
 				<div>
-					<label class="mb-1 block text-sm font-medium text-gray-700">First name</label>
+					<label for="firstName" class="mb-1 block text-sm font-medium text-gray-700"
+						>First name</label
+					>
 					<input
+						id="firstName"
 						type="text"
 						bind:value={form.firstName}
 						class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
@@ -229,8 +232,11 @@
 					/>
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium text-gray-700">Last name</label>
+					<label for="lastName" class="mb-1 block text-sm font-medium text-gray-700"
+						>Last name</label
+					>
 					<input
+						id="lastName"
 						type="text"
 						bind:value={form.lastName}
 						class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
@@ -242,8 +248,9 @@
 			<!-- Contact -->
 			<div class="grid gap-4 md:grid-cols-2">
 				<div>
-					<label class="mb-1 block text-sm font-medium text-gray-700">SFSU Email</label>
+					<label for="email" class="mb-1 block text-sm font-medium text-gray-700">SFSU Email</label>
 					<input
+						id="email"
 						type="email"
 						bind:value={form.email}
 						placeholder="your.name@sfsu.edu"
@@ -252,8 +259,11 @@
 					/>
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium text-gray-700">Phone (optional)</label>
+					<label for="phone" class="mb-1 block text-sm font-medium text-gray-700"
+						>Phone (optional)</label
+					>
 					<input
+						id="phone"
 						type="tel"
 						bind:value={form.phone}
 						class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
@@ -264,8 +274,11 @@
 			<!-- Student & academic info -->
 			<div class="grid gap-4 md:grid-cols-3">
 				<div>
-					<label class="mb-1 block text-sm font-medium text-gray-700">Student ID</label>
+					<label for="studentId" class="mb-1 block text-sm font-medium text-gray-700"
+						>Student ID</label
+					>
 					<input
+						id="studentId"
 						type="text"
 						bind:value={form.studentId}
 						class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
@@ -273,8 +286,9 @@
 					/>
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium text-gray-700">Major</label>
+					<label for="major" class="mb-1 block text-sm font-medium text-gray-700">Major</label>
 					<input
+						id="major"
 						type="text"
 						bind:value={form.major}
 						placeholder="e.g. Computer Science"
@@ -283,8 +297,9 @@
 					/>
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium text-gray-700">GPA</label>
+					<label for="gpa" class="mb-1 block text-sm font-medium text-gray-700">GPA</label>
 					<input
+						id="gpa"
 						type="text"
 						bind:value={form.gpa}
 						placeholder="e.g. 3.5"
@@ -296,10 +311,11 @@
 
 			<div class="grid gap-4 md:grid-cols-2">
 				<div>
-					<label class="mb-1 block text-sm font-medium text-gray-700"
+					<label for="graduationYear" class="mb-1 block text-sm font-medium text-gray-700"
 						>Expected graduation year (optional)</label
 					>
 					<input
+						id="graduationYear"
 						type="text"
 						bind:value={form.graduationYear}
 						placeholder="e.g. 2027"
@@ -315,14 +331,17 @@
 
 			<!-- Subjects -->
 			<div>
-				<label class="mb-1 block text-sm font-medium text-gray-700">Subjects you can tutor</label>
+				<label for="currentSubject" class="mb-1 block text-sm font-medium text-gray-700"
+					>Subjects you can tutor</label
+				>
 				<div class="mb-2 flex flex-wrap items-center gap-2">
 					<input
+						id="currentSubject"
 						type="text"
 						bind:value={currentSubject}
 						placeholder="e.g. CSC 413"
 						class="min-w-[160px] flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
-						on:keydown={(e) => {
+						onkeydown={(e) => {
 							if (e.key === 'Enter') {
 								e.preventDefault();
 								addSubject();
@@ -331,7 +350,7 @@
 					/>
 					<button
 						type="button"
-						on:click={addSubject}
+						onclick={addSubject}
 						class="rounded-lg bg-[#231161] px-3 py-2 text-xs font-semibold text-white hover:bg-[#2d1982]"
 					>
 						Add
@@ -343,7 +362,7 @@
 						{#each suggestedSubjects as subj}
 							<button
 								type="button"
-								on:click={() => {
+								onclick={() => {
 									currentSubject = subj;
 									addSubject();
 								}}
@@ -361,7 +380,7 @@
 								class="inline-flex items-center gap-1 rounded-full bg-[#231161]/10 px-3 py-1 text-xs text-[#231161]"
 							>
 								{subject}
-								<button type="button" on:click={() => removeSubject(subject)} class="text-[10px]">
+								<button type="button" onclick={() => removeSubject(subject)} class="text-[10px]">
 									✕
 								</button>
 							</span>
@@ -376,22 +395,25 @@
 
 			<!-- Bio -->
 			<div>
-				<label class="mb-1 block text-sm font-medium text-gray-700"
+				<label for="shortBio" class="mb-1 block text-sm font-medium text-gray-700"
 					>Short tutor bio (optional)</label
 				>
 				<textarea
+					id="shortBio"
 					bind:value={form.shortBio}
 					rows={3}
 					placeholder="Tell students about your experience, courses you've excelled in, and how you like to help."
 					class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
-				/>
+				></textarea>
 			</div>
 
 			<!-- Password -->
 			<div class="grid gap-4 md:grid-cols-2">
 				<div>
-					<label class="mb-1 block text-sm font-medium text-gray-700">Password</label>
+					<label for="password" class="mb-1 block text-sm font-medium text-gray-700">Password</label
+					>
 					<input
+						id="password"
 						type="password"
 						bind:value={form.password}
 						class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
@@ -400,8 +422,11 @@
 					<p class="mt-1 text-xs text-gray-500">At least 8 characters.</p>
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium text-gray-700">Confirm password</label>
+					<label for="confirmPassword" class="mb-1 block text-sm font-medium text-gray-700"
+						>Confirm password</label
+					>
 					<input
+						id="confirmPassword"
 						type="password"
 						bind:value={form.confirmPassword}
 						class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
