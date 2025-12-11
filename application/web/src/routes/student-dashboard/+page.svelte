@@ -404,14 +404,15 @@
 				return;
 			}
 
-			// 🔹 Load ALL tutors instead of only top tutors
+			// 🔹 Load ALL tutors (now includes tags in response)
 			const tutorsRes = await authFetch('/api/tutors');
 			if (tutorsRes.ok) {
 				tutors = await tutorsRes.json();
 				filteredTutors = tutors;
 
+				// 🔹 Store tags directly from the response (no individual requests needed!)
 				for (const tutor of tutors) {
-					await loadTutorCourses(tutor.tid);
+					tutorCourses[tutor.tid] = tutor.tags || [];
 				}
 			} else {
 				tutors = [];

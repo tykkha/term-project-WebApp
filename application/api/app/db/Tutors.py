@@ -253,62 +253,15 @@ class GatorGuidesTutors:
 
     def get_all_tutors(self) -> List[Dict[str, Any]]:
         """
-        Return **all** tutors in the system, regardless of verification status.
-        This is what the student dashboard should call to show "literally all" tutors.
+        Return **all** tutors in the system with their tags included.
+        Optimized to fetch all tutor-tag relationships in a single query.
         """
         if not self._ensure_connection():
             logger.error("Get all tutors failed: database connection unavailable")
             return []
 
         try:
-            query = """
-                    SELECT
-                        t.tid,
-                        u.firstName,
-                        u.lastName,
-                        u.email,
-                        u.bio,
-                        COALESCE(t.rating, 0) AS rating,
-                        t.status,
-                        t.verificationStatus
-                    FROM Tutor t
-                             INNER JOIN User u ON t.uid = u.uid
-                    ORDER BY
-                        CASE
-                            WHEN t.verificationStatus = 'approved' THEN 0
-                            WHEN t.verificationStatus = 'pending' THEN 1
-                            ELSE 2
-                            END,
-                        rating DESC,
-                        t.tid ASC \
-                    """
-            self.cursor.execute(query)
-            tutors = self.cursor.fetchall()
-
-            results: List[Dict[str, Any]] = []
-            for tutor in tutors:
-                results.append({
-                    'tid': tutor['tid'],
-                    'name': f"{tutor['firstName']} {tutor['lastName']}",
-                    'email': tutor['email'],
-                    'bio': tutor['bio'],
-                    'rating': float(tutor['rating']) if tutor['rating'] is not None else 0.0,
-                    'status': tutor['status'],
-                    'verificationStatus': tutor['verificationStatus']
-                })
-
-            return results
-
-        except Exception as e:
-            logger.error(f"Get all tutors error: {e}", exc_info=True)
-            return []
-
-    def get_top_tutors(self, limit: int = 50) -> List[Dict[str, Any]]:
-        if not self._ensure_connection():
-            logger.error("Get top tutors failed: database connection unavailable")
-            return []
-
-        try:
+            # First, get all tutors
             query = """
                     SELECT
                         t.tid,
@@ -329,21 +282,138 @@ class GatorGuidesTutors:
                             END,
                         rating DESC,
                         t.tid ASC
-                        LIMIT %s \
                     """
-            self.cursor.execute(query, (limit,))
+            self.cursor.execute(query)
             tutors = self.cursor.fetchall()
 
+            if not tutors:
+                return []
+
+            # Get all tutor IDs
+            tutor_ids = [t['tid'] for t in tutors]
+
+            # Fetch all tags for all tutors in a single query
+            tags_query = """
+                         SELECT tt.tid, tg.tagsID, tg.tags
+                         FROM TutorTags tt
+                                  INNER JOIN Tags tg ON tt.tagsID = tg.tagsID
+                         WHERE tt.tid IN (%s)
+                         ORDER BY tt.tid, tg.tags
+                         """ % ','.join(['%s'] * len(tutor_ids))
+
+            self.cursor.execute(tags_query, tutor_ids)
+            all_tags = self.cursor.fetchall()
+
+            # Group tags by tutor ID
+            tags_by_tutor = {}
+            for tag in all_tags:
+                tid = tag['tid']
+                if tid not in tags_by_tutor:
+                    tags_by_tutor[tid] = []
+                tags_by_tutor[tid].append({
+                    'tagsID': tag['tagsID'],
+                    'tags': tag['tags']
+                })
+
+            # Build results with tags included
             results: List[Dict[str, Any]] = []
             for tutor in tutors:
+                tid = tutor['tid']
                 results.append({
-                    'tid': tutor['tid'],
+                    'tid': tid,
                     'name': f"{tutor['firstName']} {tutor['lastName']}",
                     'email': tutor['email'],
                     'bio': tutor['bio'],
                     'rating': float(tutor['rating']) if tutor['rating'] is not None else 0.0,
                     'status': tutor['status'],
-                    'verificationStatus': tutor['verificationStatus']
+                    'verificationStatus': tutor['verificationStatus'],
+                    'tags': tags_by_tutor.get(tid, [])  # Include tags here
+                })
+
+            return results
+
+        except Exception as e:
+            logger.error(f"Get all tutors error: {e}", exc_info=True)
+            return []
+
+    def get_top_tutors(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """
+        Return top tutors with their tags included.
+        Optimized to fetch all tutor-tag relationships in a single query.
+        """
+        if not self._ensure_connection():
+            logger.error("Get top tutors failed: database connection unavailable")
+            return []
+
+        try:
+            # First, get top tutors
+            query = """
+                    SELECT
+                        t.tid,
+                        u.firstName,
+                        u.lastName,
+                        u.email,
+                        u.bio,
+                        COALESCE(t.rating, 0) AS rating,
+                        t.status,
+                        t.verificationStatus
+                    FROM Tutor t
+                             INNER JOIN User u ON t.uid = u.uid
+                    ORDER BY
+                        CASE
+                            WHEN t.verificationStatus = 'approved' THEN 0
+                            WHEN t.verificationStatus = 'pending' THEN 1
+                            ELSE 2
+                            END,
+                        rating DESC,
+                        t.tid ASC
+                        LIMIT %s
+                    """
+            self.cursor.execute(query, (limit,))
+            tutors = self.cursor.fetchall()
+
+            if not tutors:
+                return []
+
+            # Get all tutor IDs
+            tutor_ids = [t['tid'] for t in tutors]
+
+            # Fetch all tags for these tutors in a single query
+            tags_query = """
+                         SELECT tt.tid, tg.tagsID, tg.tags
+                         FROM TutorTags tt
+                                  INNER JOIN Tags tg ON tt.tagsID = tg.tagsID
+                         WHERE tt.tid IN (%s)
+                         ORDER BY tt.tid, tg.tags
+                         """ % ','.join(['%s'] * len(tutor_ids))
+        
+            self.cursor.execute(tags_query, tutor_ids)
+            all_tags = self.cursor.fetchall()
+
+            # Group tags by tutor ID
+            tags_by_tutor = {}
+            for tag in all_tags:
+                tid = tag['tid']
+                if tid not in tags_by_tutor:
+                    tags_by_tutor[tid] = []
+                tags_by_tutor[tid].append({
+                    'tagsID': tag['tagsID'],
+                    'tags': tag['tags']
+                })
+
+            # Build results with tags included
+            results: List[Dict[str, Any]] = []
+            for tutor in tutors:
+                tid = tutor['tid']
+                results.append({
+                    'tid': tid,
+                    'name': f"{tutor['firstName']} {tutor['lastName']}",
+                    'email': tutor['email'],
+                    'bio': tutor['bio'],
+                    'rating': float(tutor['rating']) if tutor['rating'] is not None else 0.0,
+                    'status': tutor['status'],
+                    'verificationStatus': tutor['verificationStatus'],
+                    'tags': tags_by_tutor.get(tid, [])  # Include tags here
                 })
 
             return results
