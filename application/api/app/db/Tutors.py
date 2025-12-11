@@ -311,8 +311,8 @@ class GatorGuidesTutors:
                 if tid not in tags_by_tutor:
                     tags_by_tutor[tid] = []
                 tags_by_tutor[tid].append({
-                    'tagsID': tag['tagsID'],
-                    'tags': tag['tags']
+                    'id': tag['tagsID'],
+                    'name': tag['tags']
                 })
 
             # Build results with tags included
@@ -397,8 +397,8 @@ class GatorGuidesTutors:
                 if tid not in tags_by_tutor:
                     tags_by_tutor[tid] = []
                 tags_by_tutor[tid].append({
-                    'tagsID': tag['tagsID'],
-                    'tags': tag['tags']
+                    'id': tag['tagsID'],
+                    'name': tag['tags']
                 })
 
             # Build results with tags included
