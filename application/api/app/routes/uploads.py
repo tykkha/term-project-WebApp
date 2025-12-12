@@ -1,11 +1,13 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Header
 from pathlib import Path
 import logging
 import os
 from datetime import datetime
 from typing import Dict, Any
 
-from .dependencies import get_current_user, GatorGuidesUsers, get_users_manager
+from dependencies import get_users_manager
+from db.Users import GatorGuidesUsers
+from db.Auth import GatorGuidesAuth
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -15,6 +17,23 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+
+async def get_current_user(authorization: str = Header(None)) -> int:
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authentication format")
+    
+    from db.Auth import GatorGuidesAuth
+    auth_mgr = GatorGuidesAuth()
+    session_id = authorization.replace("Bearer ", "")
+    uid = auth_mgr.validate_session(session_id)
+    
+    if not uid:
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    
+    return uid
 
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
