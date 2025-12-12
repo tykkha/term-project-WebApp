@@ -83,7 +83,7 @@ class GatorGuidesTutors:
             # Make newly created tutors "approved" so they appear on the student dashboard
             query = """
                     INSERT INTO Tutor (uid, rating, status, verificationStatus)
-                    VALUES (%s, %s, %s, 'approved')
+                    VALUES (%s, %s, %s, 'unapproved')
                     """
             cursor.execute(query, (uid, rating, status))
             tutor_id = cursor.lastrowid
@@ -96,7 +96,7 @@ class GatorGuidesTutors:
                 'email': user['email'],
                 'rating': rating,
                 'status': status,
-                'verificationStatus': 'approved'
+                'verificationStatus': 'unapproved'
             }
 
         except Exception as e:
