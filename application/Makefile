@@ -25,8 +25,11 @@ build-api:
 
 server-api:
 	git pull origin main
+	sudo systemctl stop api.service
+	sudo systemctl stop mysql.service
 	rm -rf /var/www/api/app && cp -r api/app /var/www/api/app && cd /var/www/api/app && $(PY) -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
-	sudo systemctl restart api.service
+	sudo systemctl start mysql.service
+	sudo systemctl start api.service
 
 server-web:
 	git pull origin main
@@ -34,4 +37,8 @@ server-web:
 	sudo systemctl restart svelte.service
 
 server-db:
-	sudo systemctl stop api.service && cd api/app/db && mysql -u guides -pgatorguides < Schema.sql && mysql -u guides -pgatorguides < Inserts.sql && sudo systemctl start api
+	sudo systemctl stop mysql.service
+	cd api/app/db
+	mysql -u guides -pgatorguides < Schema.sql 
+	mysql -u guides -pgatorguides < Inserts.sql 
+	sudo systemctl start mysql.service
