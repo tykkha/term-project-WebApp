@@ -9,6 +9,7 @@ from db.Tutors import GatorGuidesTutors
 from db.Posts import GatorGuidesPosts
 from db.Messages import GatorGuidesMessages
 from db.Search import GatorGuidesSearch
+from db.Availability import GatorGuidesAvailability
 from dependencies import (
     set_auth_manager_instance, 
     set_session_manager_instance, 
@@ -16,7 +17,8 @@ from dependencies import (
     set_tutors_manager_instance, 
     set_posts_manager_instance, 
     set_messages_manager_instance, 
-    set_search_manager_instance
+    set_search_manager_instance,
+    set_availability_manager_instance
 )
 from core.config import settings
 import logging
@@ -77,6 +79,7 @@ async def lifespan(app: FastAPI):
         posts_manager = GatorGuidesPosts()
         messages_manager = GatorGuidesMessages()
         search_manager = GatorGuidesSearch()
+        availability_manager = GatorGuidesAvailability()
 
         set_tutors_manager_instance(tutors_manager)
         set_users_manager_instance(users_manager)
@@ -85,6 +88,8 @@ async def lifespan(app: FastAPI):
         set_posts_manager_instance(posts_manager)
         set_messages_manager_instance(messages_manager)
         set_search_manager_instance(search_manager)
+        set_availability_manager_instance(availability_manager)
+        
         logger.info("Manager instances initialized")
 
         cleanup_task = asyncio.create_task(cleanup_sessions_task())

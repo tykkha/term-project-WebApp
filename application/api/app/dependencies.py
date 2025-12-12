@@ -5,6 +5,7 @@ from db.Search import GatorGuidesSearch
 from db.Sessions import GatorGuidesSessions
 from db.Tutors import GatorGuidesTutors
 from db.Users import GatorGuidesUsers
+from db.Availability import GatorGuidesAvailability
 
 _auth_manager_instance = None
 _session_manager_instance = None
@@ -13,6 +14,7 @@ _tutors_manager_instance = None
 _posts_manager_instance = None
 _messages_manager_instance = None
 _search_manager_instance = None
+_availability_manager_instance = None
 
 def set_auth_manager_instance(instance: GatorGuidesAuth):
     global _auth_manager_instance
@@ -41,6 +43,10 @@ def set_messages_manager_instance(instance: GatorGuidesMessages):
 def set_search_manager_instance(instance: GatorGuidesSearch):
     global _search_manager_instance
     _search_manager_instance = instance
+
+def set_availability_manager_instance(instance: GatorGuidesAvailability):
+    global _availability_manager_instance
+    _availability_manager_instance = instance
 
 def get_auth_manager() -> GatorGuidesAuth:
     if not _auth_manager_instance:
@@ -76,3 +82,8 @@ def get_search_manager() -> GatorGuidesSearch:
     if not _search_manager_instance:
         raise RuntimeError("Search manager not initialized")
     return _search_manager_instance
+
+def get_availability_manager() -> GatorGuidesAvailability:
+    if not _availability_manager_instance:
+        raise RuntimeError("Availability manager not initialized")
+    return _availability_manager_instance
