@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any
-from dependencies import get_auth_manager, get_session_manager
+from dependencies import get_auth_manager, get_session_manager, get_users_manager, get_tutors_manager
 from db.Tutors import GatorGuidesTutors
 from db.Users import GatorGuidesUsers
 from db.Auth import GatorGuidesAuth
@@ -28,18 +28,6 @@ class CreateRatingRequest(BaseModel):
     tid: int = Field(..., description="Tutor ID")
     sid: int = Field(..., description="Session ID")
     rating: float = Field(..., ge=0.0, le=5.0, description="Rating value (0-5)")
-
-def get_tutors_manager():
-    global tutors_instance
-    if not tutors_instance:
-        tutors_instance = GatorGuidesTutors()
-    return tutors_instance
-
-def get_users_manager():
-    global users_instance
-    if not users_instance:
-        users_instance = GatorGuidesUsers()
-    return users_instance
 
 async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGuidesAuth = Depends(get_auth_manager)) -> int:
     if not authorization:

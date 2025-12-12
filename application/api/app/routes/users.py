@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Header, UploadFile, File
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Dict, Any
-from dependencies import get_auth_manager, get_session_manager
+from dependencies import get_auth_manager, get_session_manager, get_users_manager
 import re
 from pathlib import Path
 from datetime import datetime
@@ -57,12 +57,6 @@ class UpdateUserRequest(BaseModel):
     lastName: Optional[str] = Field(None, min_length=1, max_length=255)
     profilePicture: Optional[str] = None
     bio: Optional[str] = None
-
-def get_users_manager():
-    global users_instance
-    if not users_instance:
-        users_instance = GatorGuidesUsers()
-    return users_instance
 
 async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGuidesAuth = Depends(get_auth_manager)) -> int:
     if not authorization:

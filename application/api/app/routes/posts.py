@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
-from dependencies import get_auth_manager, get_session_manager
+from dependencies import get_auth_manager, get_session_manager, get_tutors_manager, get_users_manager#, get_posts_manager
 from db.Posts import GatorGuidesPosts
 from db.Tutors import GatorGuidesTutors
 from db.Users import GatorGuidesUsers
@@ -13,8 +13,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 posts_instance = None
-tutors_instance = None
-users_instance = None
 
 class CreatePostRequest(BaseModel):
     tid: int = Field(..., description="Tutor ID")
@@ -35,28 +33,6 @@ def get_posts_manager():
             password=settings.DATABASE_PASSWORD
         )
     return posts_instance
-
-def get_tutors_manager():
-    global tutors_instance
-    if not tutors_instance:
-        tutors_instance = GatorGuidesTutors(
-            host=settings.DATABASE_HOST,
-            database=settings.DATABASE_NAME,
-            user=settings.DATABASE_USER,
-            password=settings.DATABASE_PASSWORD
-        )
-    return tutors_instance
-
-def get_users_manager():
-    global users_instance
-    if not users_instance:
-        users_instance = GatorGuidesUsers(
-            host=settings.DATABASE_HOST,
-            database=settings.DATABASE_NAME,
-            user=settings.DATABASE_USER,
-            password=settings.DATABASE_PASSWORD
-        )
-    return users_instance
 
 async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGuidesAuth = Depends(get_auth_manager)) -> int:
     if not authorization:

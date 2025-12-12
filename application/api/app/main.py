@@ -1,10 +1,13 @@
 from typing import Union
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import search, sessions, users, tutors, messages, posts#, uploads
+from routes import search, sessions, users, tutors, messages, posts, uploads
 from db.Auth import ConnectionPool, ConnectionCleaner, GatorGuidesAuth
 from db.Sessions import GatorGuidesSessions
-from dependencies import set_auth_instance, set_session_manager_instance
+from db.Users import GatorGuidesUsers
+from db.Tutors import GatorGuidesTutors
+from db.Posts import GatorGuidesPosts
+from dependencies import set_auth_instance, set_session_manager_instance, set_users_manager_instance, set_tutors_manager_instance#, set_posts_manager_instance
 from core.config import settings
 import logging
 from contextlib import asynccontextmanager
@@ -57,9 +60,15 @@ async def lifespan(app: FastAPI):
         
         auth_instance = GatorGuidesAuth()
         session_manager_instance = GatorGuidesSessions()
-        
+        users_manager = GatorGuidesUsers()
+        tutors_manager = GatorGuidesTutors()
+        #posts_manager = GatorGuidesPosts()
+
+        set_tutors_manager_instance(tutors_manager)
+        set_users_manager_instance(users_manager)
         set_auth_instance(auth_instance)
         set_session_manager_instance(session_manager_instance)
+        #set_posts_manager_instance(posts_manager)
         logger.info("Manager instances initialized")
 
         cleanup_task = asyncio.create_task(cleanup_sessions_task())
@@ -141,4 +150,4 @@ app.include_router(users.router, prefix="/api")
 app.include_router(tutors.router, prefix="/api")
 app.include_router(messages.router, prefix="/api")
 app.include_router(posts.router, prefix="/api")
-#app.include_router(uploads.router, prefix="/api")
+app.include_router(uploads.router, prefix="/api")
