@@ -1,9 +1,10 @@
 from typing import Union
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import search, sessions, users, tutors, messages, posts, uploads
-
-from db.Auth import GatorGuidesAuth
+from routes import search, sessions, users, tutors, messages, posts#, uploads
+from db.Auth import ConnectionPool, ConnectionCleaner, GatorGuidesAuth
+from db.Sessions import GatorGuidesSessions
+from dependencies import set_auth_instance, set_session_manager_instance
 from core.config import settings
 import logging
 from contextlib import asynccontextmanager
@@ -11,50 +12,85 @@ import asyncio
 
 logger = logging.getLogger(__name__)
 
-# Global auth instance for cleanup
-auth_cleanup_instance = None
+# Global instances
+auth_instance = None
+session_manager_instance = None
+cleaner = ConnectionCleaner(check_interval=600)
 
 
 async def cleanup_sessions_task():
-    global auth_cleanup_instance
-    
     while True:
         try:
             await asyncio.sleep(14400)
             
-            if not auth_cleanup_instance:
-                auth_cleanup_instance = GatorGuidesAuth(
-                    host=settings.DATABASE_HOST,
-                    database=settings.DATABASE_NAME,
-                    user=settings.DATABASE_USER,
-                    password=settings.DATABASE_PASSWORD
-                )
+            if auth_instance:
+                count = auth_instance.cleanup_expired_sessions()
+                logger.info(f"Cleaned up {count} expired sessions")
             
-            count = auth_cleanup_instance.cleanup_expired_sessions()
-            logger.info(f"Cleaned up {count} expired sessions")
-            
+        except asyncio.CancelledError:
+            logger.info("Session cleanup task cancelled")
+            break
         except Exception as e:
             logger.error(f"Session cleanup error: {e}", exc_info=True)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global auth_instance, session_manager_instance
+    
     # Startup
     logger.info("Starting GatorGuides API...")
     
-    # Start cleanup task
-    cleanup_task = asyncio.create_task(cleanup_sessions_task())
+    try:
+        pool = ConnectionPool()
+        pool.initialize(
+            host=settings.DATABASE_HOST,
+            database=settings.DATABASE_NAME,
+            user=settings.DATABASE_USER,
+            password=settings.DATABASE_PASSWORD,
+            pool_size=10
+        )
+        logger.info("Connection pool initialized")
+
+        cleaner.start()
+        logger.info("Connection cleaner started")
+        
+        auth_instance = GatorGuidesAuth()
+        session_manager_instance = GatorGuidesSessions()
+        
+        set_auth_instance(auth_instance)
+        set_session_manager_instance(session_manager_instance)
+        logger.info("Manager instances initialized")
+
+        cleanup_task = asyncio.create_task(cleanup_sessions_task())
+        logger.info("Session cleanup task started")
+        
+    except Exception as e:
+        logger.error(f"Startup failed: {e}", exc_info=True)
+        raise
     
     yield
     
     # Shutdown
     logger.info("Shutting down GatorGuides API...")
-    cleanup_task.cancel()
     
-    # Close auth connection
-    if auth_cleanup_instance:
-        auth_cleanup_instance.close()
-
+    try:
+        cleanup_task.cancel()
+        try:
+            await cleanup_task
+        except asyncio.CancelledError:
+            pass
+        
+        cleaner.stop()
+        logger.info("Connection cleaner stopped")
+        
+        pool.close_all()
+        logger.info("Connection pool closed")
+        
+    except Exception as e:
+        logger.error(f"Shutdown error: {e}", exc_info=True)
+    
+    logger.info("Shutdown complete")
 
 app = FastAPI(title="GatorGuides API", lifespan=lifespan)
 
@@ -66,16 +102,38 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
-
 
 @app.get("/items/{item_id}")
 def read_item(item_id: int, q: Union[str, None] = None):
     return {"item_id": item_id, "q": q}
 
+@app.get("/health")
+async def health_check():
+    try:
+        pool = ConnectionPool()
+        conn = pool.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        return {
+            "status": "healthy",
+            "database": "connected",
+            "auth_initialized": auth_instance is not None,
+            "session_manager_initialized": session_manager_instance is not None
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {
+            "status": "unhealthy",
+            "database": "disconnected",
+            "error": str(e)
+        }
 
 app.include_router(search.router, prefix="/api")
 app.include_router(sessions.router, prefix="/api")
@@ -83,4 +141,4 @@ app.include_router(users.router, prefix="/api")
 app.include_router(tutors.router, prefix="/api")
 app.include_router(messages.router, prefix="/api")
 app.include_router(posts.router, prefix="/api")
-app.include_router(uploads.router, prefix="/api")
+#app.include_router(uploads.router, prefix="/api")

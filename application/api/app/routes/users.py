@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Header, UploadFile, File
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Dict, Any
+from dependencies import get_auth_manager, get_session_manager
 import re
 from pathlib import Path
 from datetime import datetime
@@ -18,7 +19,6 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 users_instance = None
-auth_instance = None
 
 class RegisterRequest(BaseModel):
     firstName: str = Field(..., min_length=1, max_length=255)
@@ -61,24 +61,8 @@ class UpdateUserRequest(BaseModel):
 def get_users_manager():
     global users_instance
     if not users_instance:
-        users_instance = GatorGuidesUsers(
-            host=settings.DATABASE_HOST,
-            database=settings.DATABASE_NAME,
-            user=settings.DATABASE_USER,
-            password=settings.DATABASE_PASSWORD
-        )
+        users_instance = GatorGuidesUsers()
     return users_instance
-
-def get_auth_manager():
-    global auth_instance
-    if not auth_instance:
-        auth_instance = GatorGuidesAuth(
-            host=settings.DATABASE_HOST,
-            database=settings.DATABASE_NAME,
-            user=settings.DATABASE_USER,
-            password=settings.DATABASE_PASSWORD
-        )
-    return auth_instance
 
 async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGuidesAuth = Depends(get_auth_manager)) -> int:
     if not authorization:

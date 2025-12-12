@@ -2,44 +2,16 @@ import mysql.connector
 from typing import Optional, Dict, Any
 import bcrypt
 import logging
+from db.Auth import ConnectionPool
 
 logger = logging.getLogger(__name__)
 
 class GatorGuidesUsers:
-    def __init__(self, host: str, database: str, user: str, password: str):
-        try:
-            host_parts = host.split(':')
-            db_host = host_parts[0]
-            db_port = int(host_parts[1]) if len(host_parts) > 1 else 3306
-
-            self.connection = mysql.connector.connect(
-                host=db_host,
-                port=db_port,
-                database=database,
-                user=user,
-                password=password,
-                autocommit=True,
-                pool_name='users_pool',
-                pool_size=10
-            )
-            self.cursor = self.connection.cursor(dictionary=True)
-        except Exception as e:
-            logger.error(f"Database connection failed: {e}")
-            self.connection = None
-            self.cursor = None
-
-    def _ensure_connection(self):
-        try:
-            if self.connection and self.connection.is_connected():
-                return True
-            self.connection.reconnect(attempts=3, delay=1)
-            self.cursor = self.connection.cursor(dictionary=True)
-            return True
-        except Exception as e:
-            logger.error(f"Reconnection failed: {e}")
-            self.connection = None
-            self.cursor = None
-            return False
+    def __init__(self):
+        self.pool = ConnectionPool()
+    
+    def _get_connection(self):
+        return self.pool.get_connection()
 
     def _hash_password(self, password: str) -> str:
         salt = bcrypt.gensalt()
@@ -50,15 +22,15 @@ class GatorGuidesUsers:
         return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
     def create_user(self, first_name: str, last_name: str, email: str, password: str, user_type: str = 'user', profile_picture: Optional[str] = None, bio: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        if not self._ensure_connection():
-            logger.error("Create user failed: database connection unavailable")
-            return None
-
-        if user_type not in ['user', 'admin']:
-            logger.error(f"Invalid user type: {user_type}")
-            return None
-
+        conn = None
         try:
+            if user_type not in ['user', 'admin']:
+                logger.error(f"Invalid user type: {user_type}")
+                return None
+
+            conn = self._get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
             # Hash the password
             hashed_password = self._hash_password(password)
 
@@ -68,11 +40,12 @@ class GatorGuidesUsers:
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """
             
-            self.cursor.execute(
+            cursor.execute(
                 query,
                 (first_name, last_name, email, hashed_password, user_type, profile_picture, bio)
             )
-            user_id = self.cursor.lastrowid
+            user_id = cursor.lastrowid
+            cursor.close()
 
             # Return user info
             return {
@@ -91,21 +64,25 @@ class GatorGuidesUsers:
         except Exception as e:
             logger.error(f"Create user error: {e}", exc_info=True)
             return None
+        finally:
+            if conn:
+                conn.close()
 
     def authenticate_user(self, email: str, password: str) -> Optional[Dict[str, Any]]:
-        if not self._ensure_connection():
-            logger.error("Authentication failed: database connection unavailable")
-            return None
-
+        conn = None
         try:
+            conn = self._get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
             query = """
                 SELECT uid, firstName, lastName, email, password, Type, profilePicture, bio
                 FROM User
                 WHERE email = %s
             """
             
-            self.cursor.execute(query, (email,))
-            user = self.cursor.fetchone()
+            cursor.execute(query, (email,))
+            user = cursor.fetchone()
+            cursor.close()
 
             if not user:
                 logger.warning(f"Authentication failed: user not found")
@@ -130,21 +107,25 @@ class GatorGuidesUsers:
         except Exception as e:
             logger.error(f"Authentication error: {e}", exc_info=True)
             return None
+        finally:
+            if conn:
+                conn.close()
 
     def get_user(self, uid: int) -> Optional[Dict[str, Any]]:
-        if not self._ensure_connection():
-            logger.error("Get user failed: database connection unavailable")
-            return None
-
+        conn = None
         try:
+            conn = self._get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
             query = """
                 SELECT uid, firstName, lastName, email, Type, profilePicture, bio
                 FROM User
                 WHERE uid = %s
             """
             
-            self.cursor.execute(query, (uid,))
-            user = self.cursor.fetchone()
+            cursor.execute(query, (uid,))
+            user = cursor.fetchone()
+            cursor.close()
 
             if user:
                 return {
@@ -162,12 +143,12 @@ class GatorGuidesUsers:
         except Exception as e:
             logger.error(f"Get user error: {e}", exc_info=True)
             return None
+        finally:
+            if conn:
+                conn.close()
 
     def update_user(self, uid: int, first_name: Optional[str] = None, last_name: Optional[str] = None, profile_picture: Optional[str] = None, bio: Optional[str] = None) -> bool:
-        if not self._ensure_connection():
-            logger.error("Update user failed: database connection unavailable")
-            return False
-
+        conn = None
         try:
             updates = []
             values = []
@@ -188,21 +169,21 @@ class GatorGuidesUsers:
             if not updates:
                 return False
 
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
             values.append(uid)
             query = f"UPDATE User SET {', '.join(updates)} WHERE uid = %s"
             
-            self.cursor.execute(query, tuple(values))
-            return self.cursor.rowcount > 0
+            cursor.execute(query, tuple(values))
+            rowcount = cursor.rowcount
+            cursor.close()
+            
+            return rowcount > 0
 
         except Exception as e:
             logger.error(f"Update user error: {e}", exc_info=True)
             return False
-
-    def close(self):
-        try:
-            if self.cursor:
-                self.cursor.close()
-            if self.connection and self.connection.is_connected():
-                self.connection.close()
-        except Exception as e:
-            logger.error(f"Error closing connection: {e}")
+        finally:
+            if conn:
+                conn.close()

@@ -1,308 +1,224 @@
-import mysql.connector
-from typing import Optional, Dict, Any
-from datetime import datetime
 import logging
+from typing import Optional, List, Dict, Any
+from db.Auth import ConnectionPool
 
 logger = logging.getLogger(__name__)
 
+
 class GatorGuidesSessions:
-    def __init__(self, host: str, database: str, user: str, password: str):
-        try:
-            host_parts = host.split(':')
-            db_host = host_parts[0]
-            db_port = int(host_parts[1]) if len(host_parts) > 1 else 3306
-
-            self.connection = mysql.connector.connect(
-                host=db_host,
-                port=db_port,
-                database=database,
-                user=user,
-                password=password,
-                autocommit=True,
-                pool_name='sessions_pool',
-                pool_size=10
-            )
-            self.cursor = self.connection.cursor(dictionary=True)
-        except Exception as e:
-            logger.error(f"Database connection failed: {e}")
-            self.connection = None
-            self.cursor = None
-
-    def _ensure_connection(self):
-        try:
-            if self.connection and self.connection.is_connected():
-                return True
-            self.connection.reconnect(attempts=3, delay=1)
-            self.cursor = self.connection.cursor(dictionary=True)
-            return True
-        except Exception as e:
-            logger.error(f"Reconnection failed: {e}")
-            self.connection = None
-            self.cursor = None
-            return False
-
+    def __init__(self):
+        self.pool = ConnectionPool()
+    
+    def _get_connection(self):
+        return self.pool.get_connection()
+    
     def create_session(self, uid: int, tid: int, tags_id: int, day: str, time: int) -> Optional[Dict[str, Any]]:
-        if not self._ensure_connection():
-            logger.error("Create session failed: database connection unavailable")
-            return None
-
-        valid_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-        if day not in valid_days:
-            logger.error(f"Invalid day: {day}")
-            return None
-
-        if not (0 <= time <= 23):
-            logger.error(f"Invalid time: {time}. Must be 0-23")
-            return None
-
+        conn = None
         try:
+            conn = self._get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
             query = """
-                    INSERT INTO Sessions (uid, tid, tagsID, day, time, started, concluded)
-                    VALUES (%s, %s, %s, %s, %s, NULL, NULL) \
-                    """
-
-            self.cursor.execute(query, (uid, tid, tags_id, day, time))
-            session_id = self.cursor.lastrowid
-
-            select_query = """
-                           SELECT
-                               s.sid, s.uid, s.tid, s.tagsID, s.day, s.time,
-                               s.started, s.concluded,
-                               u.firstName as student_first_name,
-                               u.lastName as student_last_name,
-                               tu.firstName as tutor_first_name,
-                               tu.lastName as tutor_last_name,
-                               tg.tags as course
-                           FROM Sessions s
-                                    INNER JOIN User u ON s.uid = u.uid
-                                    INNER JOIN Tutor t ON s.tid = t.tid
-                                    INNER JOIN User tu ON t.uid = tu.uid
-                                    INNER JOIN Tags tg ON s.tagsID = tg.tagsID
-                           WHERE s.sid = %s \
-                           """
-
-            self.cursor.execute(select_query, (session_id,))
-            session = self.cursor.fetchone()
-
+                INSERT INTO Sessions (uid, tid, tagsID, day, time)
+                VALUES (%s, %s, %s, %s, %s)
+            """
+            
+            cursor.execute(query, (uid, tid, tags_id, day, time))
+            session_id = cursor.lastrowid
+            
+            # Fetch the created session
+            cursor.execute("SELECT * FROM Sessions WHERE sid = %s", (session_id,))
+            session = cursor.fetchone()
+            cursor.close()
+            
             if session:
-                return {
-                    'sid': session['sid'],
-                    'student': {
-                        'uid': session['uid'],
-                        'name': f"{session['student_first_name']} {session['student_last_name']}"
-                    },
-                    'tutor': {
-                        'tid': session['tid'],
-                        'name': f"{session['tutor_first_name']} {session['tutor_last_name']}"
-                    },
-                    'course': session['course'],
-                    'day': session['day'],
-                    'time': session['time'],
-                    'started': session['started'],
-                    'concluded': session['concluded']
-                }
-
-            return None
-
+                logger.info(f"Tutoring session created: {session_id}")
+            return session
+            
         except Exception as e:
             logger.error(f"Create session error: {e}", exc_info=True)
             return None
-
-    def start_session(self, session_id: int) -> bool:
-        if not self._ensure_connection():
-            logger.error("Start session failed: database connection unavailable")
-            return False
-
-        try:
-            query = """
-                    UPDATE Sessions
-                    SET started = NOW()
-                    WHERE sid = %s AND started IS NULL \
-                    """
-
-            self.cursor.execute(query, (session_id,))
-            return self.cursor.rowcount > 0
-
-        except Exception as e:
-            logger.error(f"Start session error: {e}", exc_info=True)
-            return False
-
-    def end_session(self, session_id: int) -> bool:
-        if not self._ensure_connection():
-            logger.error("End session failed: database connection unavailable")
-            return False
-
-        try:
-            query = """
-                    UPDATE Sessions
-                    SET concluded = NOW()
-                    WHERE sid = %s AND concluded IS NULL \
-                    """
-
-            self.cursor.execute(query, (session_id,))
-            return self.cursor.rowcount > 0
-
-        except Exception as e:
-            logger.error(f"End session error: {e}", exc_info=True)
-            return False
-
+        finally:
+            if conn:
+                conn.close()
+    
     def get_session(self, session_id: int) -> Optional[Dict[str, Any]]:
-        if not self._ensure_connection():
-            logger.error("Get session failed: database connection unavailable")
-            return None
-
+        conn = None
         try:
+            conn = self._get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
             query = """
-                    SELECT
-                        s.sid, s.uid, s.tid, s.tagsID, s.day, s.time,
-                        s.started, s.concluded,
-                        u.firstName as student_first_name,
-                        u.lastName as student_last_name,
-                        tu.firstName as tutor_first_name,
-                        tu.lastName as tutor_last_name,
-                        tg.tags as course
-                    FROM Sessions s
-                             INNER JOIN User u ON s.uid = u.uid
-                             INNER JOIN Tutor t ON s.tid = t.tid
-                             INNER JOIN User tu ON t.uid = tu.uid
-                             INNER JOIN Tags tg ON s.tagsID = tg.tagsID
-                    WHERE s.sid = %s \
-                    """
-
-            self.cursor.execute(query, (session_id,))
-            session = self.cursor.fetchone()
-
-            if session:
-                return {
-                    'sid': session['sid'],
-                    'student': {
-                        'uid': session['uid'],
-                        'name': f"{session['student_first_name']} {session['student_last_name']}"
-                    },
-                    'tutor': {
-                        'tid': session['tid'],
-                        'name': f"{session['tutor_first_name']} {session['tutor_last_name']}"
-                    },
-                    'course': session['course'],
-                    'day': session['day'],
-                    'time': session['time'],
-                    'started': session['started'],
-                    'concluded': session['concluded']
-                }
-
-            return None
-
+                SELECT 
+                    s.*,
+                    u.uid as student_uid, u.firstName as student_firstName, 
+                    u.lastName as student_lastName, u.email as student_email,
+                    t.tid, t.uid as tutor_uid, t.rating as tutor_rating,
+                    tu.firstName as tutor_firstName, tu.lastName as tutor_lastName,
+                    tu.email as tutor_email,
+                    tag.tags as course_tag
+                FROM Sessions s
+                LEFT JOIN User u ON s.uid = u.uid
+                LEFT JOIN Tutor t ON s.tid = t.tid
+                LEFT JOIN User tu ON t.uid = tu.uid
+                LEFT JOIN Tags tag ON s.tagsID = tag.tagsID
+                WHERE s.sid = %s
+            """
+            
+            cursor.execute(query, (session_id,))
+            session = cursor.fetchone()
+            cursor.close()
+            
+            return session
+            
         except Exception as e:
             logger.error(f"Get session error: {e}", exc_info=True)
             return None
-
-    def get_user_sessions(self, uid: int) -> list:
-        if not self._ensure_connection():
-            logger.error("Get user sessions failed: database connection unavailable")
-            return []
-
+        finally:
+            if conn:
+                conn.close()
+    
+    def start_session(self, session_id: int) -> bool:
+        conn = None
         try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
             query = """
-                    SELECT
-                        s.sid, s.uid, s.tid, s.tagsID, s.day, s.time,
-                        s.started, s.concluded,
-                        tu.firstName as tutor_first_name,
-                        tu.lastName as tutor_last_name,
-                        tg.tags as course
-                    FROM Sessions s
-                             INNER JOIN Tutor t ON s.tid = t.tid
-                             INNER JOIN User tu ON t.uid = tu.uid
-                             INNER JOIN Tags tg ON s.tagsID = tg.tagsID
-                    WHERE s.uid = %s
-                    ORDER BY s.sid DESC \
-                    """
-
-            self.cursor.execute(query, (uid,))
-            sessions = self.cursor.fetchall()
-
-            results = []
-            for session in sessions:
-                results.append({
-                    'sid': session['sid'],
-                    'tutor': {
-                        'tid': session['tid'],
-                        'name': f"{session['tutor_first_name']} {session['tutor_last_name']}"
-                    },
-                    'course': session['course'],
-                    'day': session['day'],
-                    'time': session['time'],
-                    'started': session['started'],
-                    'concluded': session['concluded']
-                })
-
-            return results
-
-        except Exception as e:
-            logger.error(f"Get user sessions error: {e}", exc_info=True)
-            return []
-
-    def get_tutor_sessions(self, tid: int) -> list:
-        if not self._ensure_connection():
-            logger.error("Get tutor sessions failed: database connection unavailable")
-            return []
-
-        try:
-            query = """
-                    SELECT
-                        s.sid, s.uid, s.tid, s.tagsID, s.day, s.time,
-                        s.started, s.concluded,
-                        u.firstName as student_first_name,
-                        u.lastName as student_last_name,
-                        tg.tags as course
-                    FROM Sessions s
-                             INNER JOIN User u ON s.uid = u.uid
-                             INNER JOIN Tags tg ON s.tagsID = tg.tagsID
-                    WHERE s.tid = %s
-                    ORDER BY s.sid DESC \
-                    """
-
-            self.cursor.execute(query, (tid,))
-            sessions = self.cursor.fetchall()
-
-            results = []
-            for session in sessions:
-                results.append({
-                    'sid': session['sid'],
-                    'student': {
-                        'uid': session['uid'],
-                        'name': f"{session['student_first_name']} {session['student_last_name']}"
-                    },
-                    'course': session['course'],
-                    'day': session['day'],
-                    'time': session['time'],
-                    'started': session['started'],
-                    'concluded': session['concluded']
-                })
-
-            return results
-
-        except Exception as e:
-            logger.error(f"Get tutor sessions error: {e}", exc_info=True)
-            return []
-
-    def delete_session(self, sid: int) -> bool:
-        if not self._ensure_connection():
-            logger.error("Delete session failed: database connection unavailable")
+                UPDATE Sessions 
+                SET started = NOW() 
+                WHERE sid = %s AND started IS NULL
+            """
+            
+            cursor.execute(query, (session_id,))
+            rowcount = cursor.rowcount
+            cursor.close()
+            
+            if rowcount > 0:
+                logger.info(f"Session {session_id} started")
+                return True
             return False
-
+            
+        except Exception as e:
+            logger.error(f"Start session error: {e}", exc_info=True)
+            return False
+        finally:
+            if conn:
+                conn.close()
+    
+    def end_session(self, session_id: int) -> bool:
+        conn = None
         try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
+            query = """
+                UPDATE Sessions 
+                SET concluded = NOW() 
+                WHERE sid = %s AND started IS NOT NULL AND concluded IS NULL
+            """
+            
+            cursor.execute(query, (session_id,))
+            rowcount = cursor.rowcount
+            cursor.close()
+            
+            if rowcount > 0:
+                logger.info(f"Session {session_id} ended")
+                return True
+            return False
+            
+        except Exception as e:
+            logger.error(f"End session error: {e}", exc_info=True)
+            return False
+        finally:
+            if conn:
+                conn.close()
+
+    def delete_session(self, session_id: int) -> bool:
+        conn = None
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            
             query = "DELETE FROM Sessions WHERE sid = %s"
-            self.cursor.execute(query, (sid,))
-            return self.cursor.rowcount > 0
+            
+            cursor.execute(query, (session_id,))
+            rowcount = cursor.rowcount
+            cursor.close()
+            
+            if rowcount > 0:
+                logger.info(f"Session {session_id} deleted")
+                return True
+            return False
+            
         except Exception as e:
             logger.error(f"Delete session error: {e}", exc_info=True)
             return False
-
-    def close(self):
+        finally:
+            if conn:
+                conn.close()
+    
+    def get_user_sessions(self, uid: int) -> List[Dict[str, Any]]:
+        conn = None
         try:
-            if self.cursor:
-                self.cursor.close()
-            if self.connection and self.connection.is_connected():
-                self.connection.close()
+            conn = self._get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            query = """
+                SELECT 
+                    s.*,
+                    t.tid, t.rating as tutor_rating,
+                    tu.firstName as tutor_firstName, tu.lastName as tutor_lastName,
+                    tag.tags as course_tag
+                FROM Sessions s
+                LEFT JOIN Tutor t ON s.tid = t.tid
+                LEFT JOIN User tu ON t.uid = tu.uid
+                LEFT JOIN Tags tag ON s.tagsID = tag.tagsID
+                WHERE s.uid = %s
+                ORDER BY s.sid DESC
+            """
+            
+            cursor.execute(query, (uid,))
+            sessions = cursor.fetchall()
+            cursor.close()
+            
+            return sessions
+            
         except Exception as e:
-            logger.error(f"Error closing connection: {e}")
+            logger.error(f"Get user sessions error: {e}", exc_info=True)
+            return []
+        finally:
+            if conn:
+                conn.close()
+    
+    def get_tutor_sessions(self, tid: int) -> List[Dict[str, Any]]:
+        conn = None
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            query = """
+                SELECT 
+                    s.*,
+                    u.firstName as student_firstName, u.lastName as student_lastName,
+                    u.email as student_email,
+                    tag.tags as course_tag
+                FROM Sessions s
+                LEFT JOIN User u ON s.uid = u.uid
+                LEFT JOIN Tags tag ON s.tagsID = tag.tagsID
+                WHERE s.tid = %s
+                ORDER BY s.sid DESC
+            """
+            
+            cursor.execute(query, (tid,))
+            sessions = cursor.fetchall()
+            cursor.close()
+            
+            return sessions
+            
+        except Exception as e:
+            logger.error(f"Get tutor sessions error: {e}", exc_info=True)
+            return []
+        finally:
+            if conn:
+                conn.close()

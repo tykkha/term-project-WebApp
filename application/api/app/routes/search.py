@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Dict, Any
+from dependencies import get_auth_manager, get_session_manager
 from db.Search import GatorGuidesSearch
 from core.config import settings
 import logging
