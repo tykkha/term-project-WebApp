@@ -37,8 +37,10 @@ server-web:
 	sudo systemctl restart svelte.service
 
 server-db:
-	sudo systemctl stop mysql.service
+	sudo systemctl stop svelte.service
+	sudo systemctl stop api.service
 	cd api/app/db
 	mysql -u guides -pgatorguides < api/app/db/Schema.sql 
 	mysql -u guides -pgatorguides < api/app/db/Inserts.sql 
-	sudo systemctl start mysql.service
+	sudo systemctl start api.service
+	sudo systemctl start svelte.service
