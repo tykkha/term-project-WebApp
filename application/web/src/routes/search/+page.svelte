@@ -118,7 +118,7 @@
 					<div class="rounded-lg bg-white p-6 shadow-md">
 						<div class="mb-4 flex items-center justify-between">
 							<a
-								href={`/tutor/${tutor.tid}`}
+								href={`./tutor/${tutor.tid}`}
 								class="text-xl font-semibold text-[#231161] hover:underline"
 							>
 								<h3>{tutor.name}</h3>

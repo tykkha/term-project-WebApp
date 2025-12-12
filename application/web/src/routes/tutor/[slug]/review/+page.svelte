@@ -1,14 +1,14 @@
 <script lang="ts">
+    import { page } from '$app/state';
     import {parseDate} from '@ark-ui/svelte/date-picker';
+	import { error } from 'console';
 
     // time 
     const currDay = new Date();
     const date = currDay.toISOString().split('T')[0];
-	let value = $state([parseDate(date)]);
     
     // Review variables 
-    let rating = $state<number>();
-    let feedback = $state('');
+    let errorMessage = $state('')
     
     // The main variable to submit (the tags the user selected)
     let selectedTags = $state<string[]>([]);    
@@ -22,17 +22,15 @@
         'ENGL101', 'MATH300', 'PHYS150', 'BIOL199',
     ];
 
-    // ** New state for submitted data **
-    let submittedData = $state<{
-        rating: number | undefined;
-        feedback: string;
-        selectedTags: string[];
-    } | null>(null);
+    const tutorId = page.params.slug;
+    let reviewData = $state({
+        tId: tutorId,
+        rating: 0,
+        feedback: '',
+        selectedTags: [] as string[]
+    });
 
     // --- Tag Management Functions ---
-
-    // Reactively filter the available tags based on user input
-    // The $: syntax makes this run automatically whenever tagSearchInput changes
      let filteredTags = $derived(
         tagSearchInput 
             ? availableTags.filter(tag => 
@@ -44,50 +42,47 @@
             : []
     );
         
-    // Function to add a tag from the suggestion list
     function addTag(tag: string) {
         if (!selectedTags.includes(tag)) {
             selectedTags = [...selectedTags, tag];
         }
-        tagSearchInput = ''; // Clear the input after selection
+        tagSearchInput = ''; 
     }
 
-    // Function to remove a tag chip
     function removeTag(tagToRemove: string) {
         selectedTags = selectedTags.filter(tag => tag !== tagToRemove);
     }
     
     function isRatingValid (rating: number) : boolean {
+        errorMessage = errorMessage + 'Rating not between 1.0 - 5.0.\n';
         return (!isNaN(rating) && (rating) >= 1.0 && (rating) <= 5.0);
     } 
 
     function isFeedbackValid (feedback: string) : boolean {
+        errorMessage = errorMessage + 'Feedback exceeds 200 characters\n';
         return (feedback.length <= 200);
     }
 
+    // Function to handle form submission
     async function handleSubmit() {
-        if (!isRatingValid || !isFeedbackValid) return ; 
-        
-        const validRating = isRatingValid(rating);
-        const validFeedback = isFeedbackValid(feedback);
-        
-        if (!validRating || !validFeedback) {
-            // The derived properties will show the error messages
+        if (isRatingValid(reviewData.rating) || isFeedbackValid(reviewData.feedback)) {
             return;
         }
 
-        // If validation passes, assign the current state to submittedData
-        submittedData = {
-            rating: rating,
-            feedback: feedback,
-            selectedTags: selectedTags,
-        };
-
-        console.log("Submitting Review Data:", submittedData);
-        
-        rating = undefined;
-        feedback = '';
-        selectedTags = [];
+        console.log("Submitting Review Data:", reviewData);
+        try {
+            // const response = await fetch ('reviews/', {
+            //     method: 'POST',
+            //     headers: {
+            //         'Content-Type': 'application/json',
+            //     },
+            //     body: JSON.stringify(reviewData),
+            // });
+            
+        } catch (error) {
+            console.error('Error submitting review:', error);
+            errorMessage = 'Failed to submit review. Please try again later.';
+        }
     }
         
 </script>
@@ -95,7 +90,7 @@
 <!--Review page-->
 <div class="min-h-screen min-w-screen bg-neutral-100">
     <div class="p-4">
-        <a href="/tutor/r" class="hover:underline">← Back to Tutor</a>
+        <a href="/tutor/{tutorId}" class="hover:underline">← Back to Tutor</a>
     </div>
 	<div class="flex gap-8 p-8 justify-center">
         <div class="w-full rounded-2xl bg-white p-4 drop-shadow-lg md:w-6/12">
@@ -104,7 +99,7 @@
                 <div class="flex-col">
                     <!--Should be checked to be between 1.0-5.0-->
                     <label for="rating" class="block text-xl">Rating</label>
-                    <input type="number" bind:value={rating} placeholder="1.0 - 5.0" class="p-2 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#231161] focus:border-[#231161] rounded-lg">
+                    <input type="number" bind:value={reviewData.rating} placeholder="1.0 - 5.0" class="p-2 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#231161] focus:border-[#231161] rounded-lg">
                     {#if !isRatingValid}
                         <p class="text-sm text-red-500">Rating is not between 1.0 - 5.0</p>
                     {/if}
@@ -150,8 +145,8 @@
                     
                     <!--Character limit ~200?-->
                     <label for="description" class="block text-xl">Feedback</label>
-                    <textarea rows="5" bind:value={feedback} placeholder="Share your experience (200 character limit)" class="w-full p-2 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#231161] focus:border-[#231161] rounded-lg"></textarea>         
-                    <p class="text-base">{feedback.length} / 200</p>
+                    <textarea rows="5" bind:value={reviewData.feedback} placeholder="Share your experience (200 character limit)" class="w-full p-2 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#231161] focus:border-[#231161] rounded-lg"></textarea>         
+                    <p class="text-base">{reviewData.feedback.length} / 200</p>
                      {#if !isFeedbackValid}
                         <p class="text-sm text-red-500">Feedback exceeds the 200-character limit.</p>
                     {/if}
@@ -159,33 +154,6 @@
                 </div>
             </form>
         </div>
-
-        <!--TEST cuz console dont work else im stupid-->
-        {#if submittedData}
-            <div class="w-full rounded-2xl bg-white p-4 drop-shadow-lg md:w-6/12">
-                <h2 class="text-3xl underline mb-4 text-green-700">✅ Submission Successful!</h2>
-                <h3 class="text-xl font-semibold mb-2">Review Data:</h3>
-                <div class="space-y-3">
-                    <p class="text-lg">
-                        <strong class="font-bold">Rating:</strong> {submittedData.rating?.toFixed(1) ?? 'N/A'} / 5.0
-                    </p>
-                    <p class="text-lg">
-                        <strong class="font-bold">Tags (Courses):</strong> 
-                        {#if submittedData.selectedTags.length > 0}
-                            <span class="font-mono text-sm bg-neutral-200 p-1 rounded">
-                                {submittedData.selectedTags.join(', ')}
-                            </span>
-                        {:else}
-                            <span class="italic text-gray-500">No tags selected.</span>
-                        {/if}
-                    </p>
-                    <div class="p-3 border rounded-lg bg-neutral-50">
-                        <strong class="block font-bold text-lg mb-1">Feedback:</strong>
-                        <p class="whitespace-pre-wrap">{submittedData.feedback || 'No feedback provided.'}</p>
-                    </div>
-                </div>
-            </div>
-        {/if}
     </div>
 </div>
 

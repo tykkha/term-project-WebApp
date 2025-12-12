@@ -1,18 +1,28 @@
 <script lang="ts">
+    import { page } from '$app/state';
     import {parseDate} from '@ark-ui/svelte/date-picker';    
 
     const formatDate = (date: Date) => date.toISOString().split('T')[0];
     const formatDayName = (date: Date) => date.toLocaleDateString('en-US', { weekday: 'long' });
 
     // Tutor session variables  
+    const tutorId = page.params.slug;
     let day = $state('');
     let location = $state('');
     let startSession = $state('');
 
+    let sessionData = $state({
+        uid: '',
+        tid: tutorId,
+        tags_id: '',
+        day: '',
+        time: ''
+    });
+
     // temp data
     const locations = ['Burk Hall', 'Cesar Chavez Student Center', 'J. Paul Leonard Library'];
 
-   // --- Dynamic Data Generation ---
+    // List up to the next 7 days to be scheduled
     const getNextSevenDays = () => {
         const dates = [];
         const today = new Date();
@@ -30,17 +40,15 @@
         }
         return dates;
     };
-    
     const nextSevenDays = getNextSevenDays();
-    // --- End Dynamic Data Generation ---
 
-    // --- Dynamic Data Generation ---
+    // Create slots (hourly) for sessions
     const generateTimeSlots = (): string[] => {
         const slots: string[] = [];
-        const startHour = 9;
-        const endHour = 20; 
+        const startHour = 0;
+        const endHour = 23; 
 
-        // Loop through hours from 9 to 20 
+        // Loop through hours from 0 to 23 
         for (let h = startHour; h <= endHour; h++) {
             const hourStr = h.toString().padStart(2, '0');
             slots.push(`${hourStr}:00`);
@@ -71,38 +79,37 @@
         
         return newTimeStr;
     }
-
     const timeSlots = generateTimeSlots();
 
     // Automatically set endSession one hour after startSession changes
     let endSession = $derived(getEndTime(startSession));
 
-    let submittedSessionData: { day: string; start: string; end: string; location: string } | null = $state(null);
-
     // Function to handle form submission
     async function handleSubmit () {
-        // Debug test
-        const data = {
-            day: day,
-            start: startSession,
-            end: endSession,
-            location: location,
-        };
-        console.log('Session Data:', data);
-        
-        submittedSessionData = data;
+        console.log('Session Data:', sessionData);
 
-        day = '';
-        startSession = '';
-        endSession = '';
-        location = '';
+        try {
+            const response = await fetch ('sessions/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(sessionData),
+            });
+            
+            const res = await response.json();
+        } catch {
+
+        }
+        
     }
+
 </script>
 
 <!--Session page-->
 <div class="min-h-screen min-w-screen bg-neutral-100">
     <div class="p-4">
-        <a href="/tutor/s" class="hover:underline">← Back to Tutor</a>
+        <a href="/tutor/{tutorId}" class="hover:underline">← Back to Tutor</a>
     </div>
    
 	<div class="flex gap-8 p-8 justify-center">
@@ -116,17 +123,17 @@
                 <div class="flex-col">
                     <!--Session day and date-->
                     <label for="day" class="block text-xl">Day (Next 7 days)</label>
-                    <select bind:value={day} id="day" class="p-2 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#231161] focus:border-[#231161] rounded-lg" required>
+                    <select bind:value={sessionData.day} id="day" class="p-2 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#231161] focus:border-[#231161] rounded-lg" required>
                         <option value="" disabled selected>Select a day</option>
                         {#each nextSevenDays as dayOption}
-                            <option value={dayOption.isoDate}>{dayOption.display}</option>
+                            <option value={dayOption.dayName}>{dayOption.display}</option>
                         {/each}
                     </select>
 
                     <!--Session duration-->                        
                     <label for="time" class="block text-xl mt-4">Session Time (1-Hour Session)</label>
                     <div class="flex items-center gap-2">
-                         <select bind:value={startSession} id="start-time" class="p-2 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#231161] focus:border-[#231161] rounded-lg" required>
+                         <select bind:value={sessionData.time} id="start-time" class="p-2 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#231161] focus:border-[#231161] rounded-lg" required>
                             <option value="" disabled selected>Start Time</option>
                             {#each timeSlots as time}
                                 <option value={time}>{time}</option>
@@ -154,19 +161,5 @@
                 </div>
             </form>
         </div>
-
-        <!--TEST cuz console dont work else im stupid-->
-        {#if submittedSessionData}
-            <div class="w-full rounded-2xl bg-white p-4 drop-shadow-lg md:w-6/12 h-fit">
-                <h3 class="text-2xl font-bold text-green-600 mb-2">✅ Session Successfully Submitted!</h3>
-                <h4 class="text-xl underline mb-2">Submitted Data Preview</h4>
-                <ul class="space-y-1">
-                    <li class="font-semibold">Date: <span class="font-normal">{submittedSessionData.day}</span></li>
-                    <li class="font-semibold">Time: <span class="font-normal">{submittedSessionData.start} to {submittedSessionData.end}</span></li>
-                    <li class="font-semibold">Location: <span class="font-normal">{submittedSessionData.location}</span></li>
-                </ul>
-                <p class="mt-4 text-sm text-gray-500">This data was logged to the console and displayed here using the new `submittedSessionData` variable.</p>
-            </div>
-        {/if}
     </div>
 </div>
