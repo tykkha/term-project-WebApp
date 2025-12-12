@@ -39,6 +39,6 @@ server-web:
 server-db:
 	sudo systemctl stop mysql.service
 	cd api/app/db
-	mysql -u guides -pgatorguides < Schema.sql 
-	mysql -u guides -pgatorguides < Inserts.sql 
+	mysql -u guides -pgatorguides < api/app/db/Schema.sql 
+	mysql -u guides -pgatorguides < api/app/db/Inserts.sql 
 	sudo systemctl start mysql.service
