@@ -7,7 +7,17 @@ from db.Sessions import GatorGuidesSessions
 from db.Users import GatorGuidesUsers
 from db.Tutors import GatorGuidesTutors
 from db.Posts import GatorGuidesPosts
-from dependencies import set_auth_instance, set_session_manager_instance, set_users_manager_instance, set_tutors_manager_instance#, set_posts_manager_instance
+from db.Messages import GatorGuidesMessages
+from db.Search import GatorGuidesSearch
+from dependencies import (
+    set_auth_manager_instance, 
+    set_session_manager_instance, 
+    set_users_manager_instance, 
+    set_tutors_manager_instance, 
+    set_posts_manager_instance, 
+    set_messages_manager_instance, 
+    set_search_manager_instance
+)
 from core.config import settings
 import logging
 from contextlib import asynccontextmanager
@@ -16,7 +26,7 @@ import asyncio
 logger = logging.getLogger(__name__)
 
 # Global instances
-auth_instance = None
+auth_manager_instance = None
 session_manager_instance = None
 cleaner = ConnectionCleaner(check_interval=600)
 
@@ -26,8 +36,8 @@ async def cleanup_sessions_task():
         try:
             await asyncio.sleep(14400)
             
-            if auth_instance:
-                count = auth_instance.cleanup_expired_sessions()
+            if auth_manager_instance:
+                count = auth_manager_instance.cleanup_expired_sessions()
                 logger.info(f"Cleaned up {count} expired sessions")
             
         except asyncio.CancelledError:
@@ -39,10 +49,12 @@ async def cleanup_sessions_task():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global auth_instance, session_manager_instance
+    global auth_manager_instance, session_manager_instance
     
     # Startup
     logger.info("Starting GatorGuides API...")
+    
+    cleanup_task = None
     
     try:
         pool = ConnectionPool()
@@ -51,24 +63,28 @@ async def lifespan(app: FastAPI):
             database=settings.DATABASE_NAME,
             user=settings.DATABASE_USER,
             password=settings.DATABASE_PASSWORD,
-            pool_size=10
+            pool_size=20
         )
         logger.info("Connection pool initialized")
 
         cleaner.start()
         logger.info("Connection cleaner started")
         
-        auth_instance = GatorGuidesAuth()
+        auth_manager_instance = GatorGuidesAuth()
         session_manager_instance = GatorGuidesSessions()
         users_manager = GatorGuidesUsers()
         tutors_manager = GatorGuidesTutors()
-        #posts_manager = GatorGuidesPosts()
+        posts_manager = GatorGuidesPosts()
+        messages_manager = GatorGuidesMessages()
+        search_manager = GatorGuidesSearch()
 
         set_tutors_manager_instance(tutors_manager)
         set_users_manager_instance(users_manager)
-        set_auth_instance(auth_instance)
+        set_auth_manager_instance(auth_manager_instance)
         set_session_manager_instance(session_manager_instance)
-        #set_posts_manager_instance(posts_manager)
+        set_posts_manager_instance(posts_manager)
+        set_messages_manager_instance(messages_manager)
+        set_search_manager_instance(search_manager)
         logger.info("Manager instances initialized")
 
         cleanup_task = asyncio.create_task(cleanup_sessions_task())
@@ -84,11 +100,12 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down GatorGuides API...")
     
     try:
-        cleanup_task.cancel()
-        try:
-            await cleanup_task
-        except asyncio.CancelledError:
-            pass
+        if cleanup_task:
+            cleanup_task.cancel()
+            try:
+                await cleanup_task
+            except asyncio.CancelledError:
+                pass
         
         cleaner.stop()
         logger.info("Connection cleaner stopped")
@@ -133,7 +150,7 @@ async def health_check():
         return {
             "status": "healthy",
             "database": "connected",
-            "auth_initialized": auth_instance is not None,
+            "auth_initialized": auth_manager_instance is not None,
             "session_manager_initialized": session_manager_instance is not None
         }
     except Exception as e:

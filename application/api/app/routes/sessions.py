@@ -4,7 +4,6 @@ from typing import Optional, List, Dict, Any
 from dependencies import get_auth_manager, get_session_manager
 from db.Sessions import GatorGuidesSessions
 from db.Auth import GatorGuidesAuth
-from core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)

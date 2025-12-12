@@ -1,52 +1,23 @@
-import mysql.connector
 from typing import List, Dict, Any
 import logging
-# Dependency: pip install mysql-connector-python
+from db.Auth import ConnectionPool
 
 logger = logging.getLogger(__name__)
 
+
 class GatorGuidesSearch:
-    def __init__(self, host: str, database: str, user: str, password: str):
-        try:
-            host_parts = host.split(':')
-            db_host = host_parts[0]
-            db_port = int(host_parts[1]) if len(host_parts) > 1 else 3306
-
-            self.connection = mysql.connector.connect(
-                host=db_host,
-                port=db_port,
-                database=database,
-                user=user,
-                password=password,
-                autocommit=True,
-                pool_name='gatorguides_pool',
-                pool_size=10
-            )
-            self.cursor = self.connection.cursor(dictionary=True)
-        except Exception as e:
-            logger.error(f"Database connection failed: {e}")
-            self.connection = None
-            self.cursor = None
-
-    def _ensure_connection(self):
-        try:
-            if self.connection and self.connection.is_connected():
-                return True
-            self.connection.reconnect(attempts=3, delay=1)
-            self.cursor = self.connection.cursor(dictionary=True)
-            return True
-        except Exception as e:
-            logger.error(f"Reconnection failed: {e}")
-            self.connection = None
-            self.cursor = None
-            return False
+    def __init__(self):
+        self.pool = ConnectionPool()
+    
+    def _get_connection(self):
+        return self.pool.get_connection()
 
     def search(self, query: str) -> List[Dict[str, Any]]:
-        if not self._ensure_connection():
-            logger.error("Search failed: database connection unavailable")
-            return []
-
+        conn = None
         try:
+            conn = self._get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
             results = []
             
             if not query or query.strip() == '':
@@ -63,8 +34,8 @@ class GatorGuidesSearch:
                     WHERE tutor.verificationStatus = 'approved'
                     ORDER BY tutor.rating DESC, p.timestamp DESC
                 """
-                self.cursor.execute(all_tutors_query)
-                posts_by_tag = self.cursor.fetchall()
+                cursor.execute(all_tutors_query)
+                posts_by_tag = cursor.fetchall()
             else:
                 tag_search_query = """
                     SELECT 
@@ -80,8 +51,8 @@ class GatorGuidesSearch:
                     AND tutor.verificationStatus = 'approved'
                     ORDER BY tutor.rating DESC, p.timestamp DESC
                 """
-                self.cursor.execute(tag_search_query, (f'%{query}%',))
-                posts_by_tag = self.cursor.fetchall()
+                cursor.execute(tag_search_query, (f'%{query}%',))
+                posts_by_tag = cursor.fetchall()
 
             unique_tids = set()
             tag_tutor_data = {}
@@ -121,8 +92,8 @@ class GatorGuidesSearch:
                     WHERE tt.tid IN ({placeholders})
                     ORDER BY tt.tid, tg.tags
                 """
-                self.cursor.execute(expertise_query, tuple(unique_tids))
-                expertise_results = self.cursor.fetchall()
+                cursor.execute(expertise_query, tuple(unique_tids))
+                expertise_results = cursor.fetchall()
 
                 for row in expertise_results:
                     tid = row['tid']
@@ -132,7 +103,6 @@ class GatorGuidesSearch:
             for data in tag_tutor_data.values():
                 data['courses'] = list(data['courses'])
                 results.append(data)
-
 
             name_search_query = """
                 SELECT DISTINCT
@@ -150,8 +120,8 @@ class GatorGuidesSearch:
                 ORDER BY name_priority, u.firstName, u.lastName
             """
 
-            self.cursor.execute(name_search_query, (f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%'))
-            tutors_by_name = self.cursor.fetchall()
+            cursor.execute(name_search_query, (f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%'))
+            tutors_by_name = cursor.fetchall()
 
             name_tids = []
             name_tutor_data = {}
@@ -182,8 +152,8 @@ class GatorGuidesSearch:
                     WHERE p.tid IN ({placeholders})
                     ORDER BY p.tid, p.timestamp DESC
                 """
-                self.cursor.execute(posts_query, tuple(name_tids))
-                posts_results = self.cursor.fetchall()
+                cursor.execute(posts_query, tuple(name_tids))
+                posts_results = cursor.fetchall()
 
                 for post in posts_results:
                     tid = post['tid']
@@ -203,8 +173,8 @@ class GatorGuidesSearch:
                     WHERE tt.tid IN ({placeholders})
                     ORDER BY tt.tid, tg.tags
                 """
-                self.cursor.execute(expertise_query, tuple(name_tids))
-                expertise_results = self.cursor.fetchall()
+                cursor.execute(expertise_query, tuple(name_tids))
+                expertise_results = cursor.fetchall()
 
                 for row in expertise_results:
                     tid = row['tid']
@@ -215,17 +185,32 @@ class GatorGuidesSearch:
                 data['courses'] = list(data['courses'])
                 results.append(data)
 
+            cursor.close()
             return results
 
         except Exception as e:
             logger.error(f"Search error for query '{query}': {e}", exc_info=True)
             return []
+        finally:
+            if conn:
+                conn.close()
 
-    def close(self):
+    def get_all_tags(self) -> List[Dict[str, Any]]:
+        conn = None
         try:
-            if self.cursor:
-                self.cursor.close()
-            if self.connection and self.connection.is_connected():
-                self.connection.close()
+            conn = self._get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            query = "SELECT tagsID, tags FROM Tags ORDER BY tags"
+            cursor.execute(query)
+            tags = cursor.fetchall()
+            cursor.close()
+            
+            return [{"id": tag["tagsID"], "name": tag["tags"]} for tag in tags]
+            
         except Exception as e:
-            logger.error(f"Error closing connection: {e}")
+            logger.error(f"Get tags error: {e}", exc_info=True)
+            return []
+        finally:
+            if conn:
+                conn.close()

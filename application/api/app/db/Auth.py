@@ -1,4 +1,3 @@
-import mysql.connector
 from mysql.connector import pooling
 from typing import Optional
 from datetime import datetime, timedelta
@@ -7,6 +6,7 @@ import logging
 import threading
 
 logger = logging.getLogger(__name__)
+
 
 class ConnectionPool:
     _instance = None

@@ -6,6 +6,7 @@ from db.Auth import ConnectionPool
 
 logger = logging.getLogger(__name__)
 
+
 class GatorGuidesUsers:
     def __init__(self):
         self.pool = ConnectionPool()

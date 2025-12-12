@@ -1,30 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Dict, Any
-from dependencies import get_auth_manager, get_session_manager
+from dependencies import get_search_manager
 from db.Search import GatorGuidesSearch
-from core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter()
-search_instance = None
-
-def get_search():
-    global search_instance
-    if not search_instance:
-        search_instance = GatorGuidesSearch(
-            host=settings.DATABASE_HOST,
-            database=settings.DATABASE_NAME,
-            user=settings.DATABASE_USER,
-            password=settings.DATABASE_PASSWORD
-        )
-    return search_instance
 
 # Searches for tutors based on tags and names
 @router.get("/search")
 @router.get("/search/{query}", response_model=List[Dict[str, Any]])
-async def search(query: str = "", search_db: GatorGuidesSearch = Depends(get_search)):
+async def search(query: str = "", search_db: GatorGuidesSearch = Depends(get_search_manager)):
     try:
         results = search_db.search(query)
         return results
@@ -34,16 +20,10 @@ async def search(query: str = "", search_db: GatorGuidesSearch = Depends(get_sea
 
 # Returns all available courses in the database
 @router.get("/tags", response_model=List[Dict[str, Any]])
-async def get_all_tags(search_db: GatorGuidesSearch = Depends(get_search)):
+async def get_all_tags(search_db: GatorGuidesSearch = Depends(get_search_manager)):
     try:
-        if not search_db._ensure_connection():
-            raise HTTPException(status_code=500, detail="Database connection failed")
-        
-        query = "SELECT tagsID, tags FROM Tags ORDER BY tags"
-        search_db.cursor.execute(query)
-        tags = search_db.cursor.fetchall()
-        
-        return [{"id": tag["tagsID"], "name": tag["tags"]} for tag in tags]
+        tags = search_db.get_all_tags()
+        return tags
     except Exception as e:
         logger.error(f"Get tags error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

@@ -1,4 +1,3 @@
-import mysql.connector
 from typing import Optional, Dict, Any, List
 import logging
 from db.Auth import ConnectionPool
@@ -149,8 +148,7 @@ class GatorGuidesTutors:
                 try:
                     query = "INSERT INTO TutorTags (tid, tagsID) VALUES (%s, %s)"
                     cursor.execute(query, (tid, tag_id))
-                except mysql.connector.IntegrityError:
-                    # Duplicate – ignore
+                except Exception:
                     continue
 
             cursor.close()
@@ -485,7 +483,7 @@ class GatorGuidesTutors:
                 'message': 'Rating submitted successfully. Tutor rating updated.'
             }
 
-        except mysql.connector.IntegrityError:
+        except Exception:
             logger.error(f"User {uid} already rated session {sid}")
             return None
         except Exception as e:

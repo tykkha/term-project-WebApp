@@ -1,13 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Header, UploadFile, File
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Dict, Any
-from dependencies import get_auth_manager, get_session_manager, get_users_manager
+from dependencies import get_auth_manager, get_users_manager
 import re
 from pathlib import Path
 from datetime import datetime
 from db.Users import GatorGuidesUsers
 from db.Auth import GatorGuidesAuth
-from core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,7 +17,6 @@ UPLOAD_DIR = Path("/var/www/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
-users_instance = None
 
 class RegisterRequest(BaseModel):
     firstName: str = Field(..., min_length=1, max_length=255)

@@ -1,17 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any
-from dependencies import get_auth_manager, get_session_manager, get_users_manager, get_tutors_manager
+from dependencies import get_auth_manager, get_users_manager, get_tutors_manager
 from db.Tutors import GatorGuidesTutors
 from db.Users import GatorGuidesUsers
 from db.Auth import GatorGuidesAuth
-from core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-tutors_instance = None
-users_instance = None
 
 class CreateTutorRequest(BaseModel):
     uid: int = Field(..., description="User ID to convert to tutor")

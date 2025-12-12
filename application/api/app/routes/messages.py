@@ -1,16 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Header
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any
-from dependencies import get_auth_manager, get_session_manager
+from dependencies import get_auth_manager, get_messages_manager
 from db.Messages import GatorGuidesMessages
 from db.Auth import GatorGuidesAuth
-from core.config import settings
 import logging
 import json
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-messages_instance = None
 
 class SendMessageRequest(BaseModel):
     senderUID: int = Field(..., description="Sender user ID")
@@ -47,17 +45,6 @@ class ConnectionManager:
         return user_id in self.active_connections
 
 manager = ConnectionManager()
-
-def get_messages_manager():
-    global messages_instance
-    if not messages_instance:
-        messages_instance = GatorGuidesMessages(
-            host=settings.DATABASE_HOST,
-            database=settings.DATABASE_NAME,
-            user=settings.DATABASE_USER,
-            password=settings.DATABASE_PASSWORD
-        )
-    return messages_instance
 
 async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGuidesAuth = Depends(get_auth_manager)) -> int:
     if not authorization:

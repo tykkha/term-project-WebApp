@@ -1,18 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
-from dependencies import get_auth_manager, get_session_manager, get_tutors_manager, get_users_manager#, get_posts_manager
+from dependencies import get_auth_manager, get_tutors_manager, get_posts_manager
 from db.Posts import GatorGuidesPosts
 from db.Tutors import GatorGuidesTutors
-from db.Users import GatorGuidesUsers
 from db.Auth import GatorGuidesAuth
-from core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
-posts_instance = None
 
 class CreatePostRequest(BaseModel):
     tid: int = Field(..., description="Tutor ID")
@@ -22,17 +18,6 @@ class CreatePostRequest(BaseModel):
 class UpdatePostRequest(BaseModel):
     content: Optional[str] = Field(None, min_length=1, max_length=5000, description="Updated content")
     tagsID: Optional[int] = Field(None, description="Updated course tag ID")
-
-def get_posts_manager():
-    global posts_instance
-    if not posts_instance:
-        posts_instance = GatorGuidesPosts(
-            host=settings.DATABASE_HOST,
-            database=settings.DATABASE_NAME,
-            user=settings.DATABASE_USER,
-            password=settings.DATABASE_PASSWORD
-        )
-    return posts_instance
 
 async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGuidesAuth = Depends(get_auth_manager)) -> int:
     if not authorization:
