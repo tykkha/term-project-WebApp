@@ -182,7 +182,27 @@ class GatorGuidesSessions:
             sessions = cursor.fetchall()
             cursor.close()
             
-            return sessions
+            # Transform the flat response to include nested tutor object
+            result = []
+            for session in sessions:
+                result.append({
+                    'sid': session['sid'],
+                    'uid': session['uid'],
+                    'tid': session['tid'],
+                    'tagsID': session['tagsID'],
+                    'day': session['day'],
+                    'time': session['time'],
+                    'started': session.get('started'),
+                    'concluded': session.get('concluded'),
+                    'course': session.get('course_tag', 'Unknown'),
+                    'tutor': {
+                        'tid': session['tid'],
+                        'name': f"{session.get('tutor_firstName', '')} {session.get('tutor_lastName', '')}".strip() or 'Unknown Tutor',
+                        'rating': session.get('tutor_rating', 0.0)
+                    }
+                })
+            
+            return result
             
         except Exception as e:
             logger.error(f"Get user sessions error: {e}", exc_info=True)
@@ -190,7 +210,7 @@ class GatorGuidesSessions:
         finally:
             if conn:
                 conn.close()
-    
+
     def get_tutor_sessions(self, tid: int) -> List[Dict[str, Any]]:
         conn = None
         try:
@@ -214,7 +234,27 @@ class GatorGuidesSessions:
             sessions = cursor.fetchall()
             cursor.close()
             
-            return sessions
+            # Transform the flat response to include nested student object
+            result = []
+            for session in sessions:
+                result.append({
+                    'sid': session['sid'],
+                    'uid': session['uid'],
+                    'tid': session['tid'],
+                    'tagsID': session['tagsID'],
+                    'day': session['day'],
+                    'time': session['time'],
+                    'started': session.get('started'),
+                    'concluded': session.get('concluded'),
+                    'course': session.get('course_tag', 'Unknown'),
+                    'student': {
+                        'uid': session['uid'],
+                        'name': f"{session.get('student_firstName', '')} {session.get('student_lastName', '')}".strip() or 'Unknown Student',
+                        'email': session.get('student_email', '')
+                    }
+                })
+            
+            return result
             
         except Exception as e:
             logger.error(f"Get tutor sessions error: {e}", exc_info=True)
