@@ -1,4 +1,3 @@
-import mysql.connector
 from typing import Optional, Dict, Any
 import bcrypt
 import logging
@@ -59,7 +58,7 @@ class GatorGuidesUsers:
                 'bio': bio
             }
 
-        except mysql.connector.IntegrityError as e:
+        except Exception as e:
             logger.error(f"Create user failed - integrity error: {e}")
             return None
         except Exception as e:

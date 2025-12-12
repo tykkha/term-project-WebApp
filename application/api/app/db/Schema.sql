@@ -118,7 +118,7 @@ CREATE TABLE LoginSessions
     INDEX idx_session_expiry (expiresAt)
 );
 
--- # Tutor Availability table for managing tutor's available time slots
+# Tutor Availability table for managing tutors available time slots
 DROP TABLE IF EXISTS TutorAvailability;
 CREATE TABLE TutorAvailability
 (
