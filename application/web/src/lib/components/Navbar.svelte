@@ -2,12 +2,30 @@
 	import { Dialog, Field, Menu, Portal } from '@ark-ui/svelte';
 	import { MenuIcon, SearchIcon, XIcon } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
+	import { getCurrentUser, logoutUser } from '$lib/api';
+
 	let searchQuery = $state('');
+	let open = $state(false);
+	let currentUser = $state(getCurrentUser());
+	let isLoggingOut = $state(false);
+
 	async function handleSearch() {
 		console.log(searchQuery);
 		goto(`search?search=${searchQuery}`);
 	}
-	let open = $state(false);
+
+	async function handleLogout() {
+		isLoggingOut = true;
+		try {
+			await logoutUser();
+			currentUser = null;
+			goto('/');
+		} catch (error) {
+			console.error('Logout error:', error);
+		} finally {
+			isLoggingOut = false;
+		}
+	}
 </script>
 
 <nav class="sticky top-0 z-50">
@@ -38,8 +56,19 @@
 					class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-black focus:border-[#231161] focus:outline-none"
 				/>
 			</Field.Root>
-			<a href="/login">Login</a>
-			<a href="/register">Register</a>
+			{#if currentUser}
+				<span class="text-sm">Welcome, {currentUser.firstName}!</span>
+				<button
+					onclick={handleLogout}
+					disabled={isLoggingOut}
+					class="rounded-lg bg-white px-4 py-2 text-sm font-medium text-[#231161] transition-colors hover:bg-purple-50 disabled:opacity-50"
+				>
+					{isLoggingOut ? 'Logging out...' : 'Logout'}
+				</button>
+			{:else}
+				<a href="/login">Login</a>
+				<a href="/register">Register</a>
+			{/if}
 		</div>
 		<div class="flex md:hidden">
 			<button class="hover:cursor-pointer" type="button" onclick={() => (open = !open)}
@@ -80,8 +109,19 @@
 					class="w-full rounded-lg border bg-white px-4 py-2 text-black focus:outline-none"
 				/>
 			</Field.Root>
-			<a href="/login" class="text-3xl">Login</a>
-			<a href="/register" class="text-3xl">Register</a>
+			{#if currentUser}
+				<span class="text-xl">Welcome, {currentUser.firstName}!</span>
+				<button
+					onclick={handleLogout}
+					disabled={isLoggingOut}
+					class="rounded-lg bg-[#231161] px-4 py-2 text-3xl text-white transition-colors hover:bg-[#1a0d4a] disabled:opacity-50"
+				>
+					{isLoggingOut ? 'Logging out...' : 'Logout'}
+				</button>
+			{:else}
+				<a href="/login" class="text-3xl">Login</a>
+				<a href="/register" class="text-3xl">Register</a>
+			{/if}
 		</div>
 	</div>
 {/if}

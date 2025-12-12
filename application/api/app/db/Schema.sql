@@ -117,3 +117,17 @@ CREATE TABLE LoginSessions
     FOREIGN KEY (uid) REFERENCES User (uid) ON DELETE CASCADE,
     INDEX idx_session_expiry (expiresAt)
 );
+
+-- # Tutor Availability table for managing tutor's available time slots
+DROP TABLE IF EXISTS TutorAvailability;
+CREATE TABLE TutorAvailability
+(
+    availabilityID INT PRIMARY KEY AUTO_INCREMENT,
+    tid            INT NOT NULL,
+    day            ENUM ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday') NOT NULL,
+    startTime      INT NOT NULL CHECK (startTime >= 0 AND startTime <= 23),
+    endTime        INT NOT NULL CHECK (endTime >= 0 AND endTime <= 23),
+    isActive       BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (tid) REFERENCES Tutor (tid) ON DELETE CASCADE,
+    UNIQUE KEY unique_availability (tid, day, startTime, endTime)
+);

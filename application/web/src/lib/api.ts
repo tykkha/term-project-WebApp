@@ -381,3 +381,90 @@ export async function uploadProfilePicture(uid: number, file: File): Promise<str
 	const data = await res.json();
 	return data.profilePicture;
 }
+
+export interface AvailabilitySlot {
+	availabilityID?: number;
+	tid: number;
+	day: string;
+	startTime: number;
+	endTime: number;
+	isActive?: boolean;
+}
+
+export async function getTutorAvailability(tid: number): Promise<AvailabilitySlot[]> {
+	const res = await authFetch(`${API_BASE}/tutors/${tid}/availability`);
+	if (!res.ok) {
+		throw new Error('Failed to fetch availability');
+	}
+	return res.json();
+}
+
+export async function addAvailabilitySlot(
+	tid: number,
+	day: string,
+	startTime: number,
+	endTime: number
+): Promise<AvailabilitySlot> {
+	const res = await authFetch(`${API_BASE}/tutors/${tid}/availability`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ day, startTime, endTime })
+	});
+
+	if (!res.ok) {
+		const err = await res.json().catch(() => ({}));
+		throw new Error(err?.detail || 'Failed to add availability');
+	}
+
+	return res.json();
+}
+
+export async function setBulkAvailability(
+	tid: number,
+	slots: Omit<AvailabilitySlot, 'availabilityID' | 'tid' | 'isActive'>[]
+): Promise<void> {
+	const res = await authFetch(`${API_BASE}/tutors/${tid}/availability`, {
+		method: 'PUT',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ slots })
+	});
+
+	if (!res.ok) {
+		const err = await res.json().catch(() => ({}));
+		throw new Error(err?.detail || 'Failed to update availability');
+	}
+}
+
+export async function deleteAvailabilitySlot(tid: number, availabilityID: number): Promise<void> {
+	const res = await authFetch(`${API_BASE}/tutors/${tid}/availability/${availabilityID}`, {
+		method: 'DELETE'
+	});
+
+	if (!res.ok) {
+		throw new Error('Failed to delete availability slot');
+	}
+}
+
+export async function checkTutorAvailability(
+	tid: number,
+	day: string,
+	time: number
+): Promise<boolean> {
+	const res = await authFetch(
+		`${API_BASE}/tutors/${tid}/availability/check?day=${day}&time=${time}`
+	);
+	if (!res.ok) {
+		return false;
+	}
+	const data = await res.json();
+	return data.available;
+}
+
+export async function getAvailableTimesForDay(tid: number, day: string): Promise<number[]> {
+	const res = await authFetch(`${API_BASE}/tutors/${tid}/availability/day/${day}`);
+	if (!res.ok) {
+		return [];
+	}
+	const data = await res.json();
+	return data.availableTimes || [];
+}
