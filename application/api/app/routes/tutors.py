@@ -29,6 +29,14 @@ class CreateRatingRequest(BaseModel):
     sid: int = Field(..., description="Session ID")
     rating: float = Field(..., ge=0.0, le=5.0, description="Rating value (0-5)")
 
+class AddAvailabilityRequest(BaseModel):
+    day: str = Field(..., description="Day of week")
+    startTime: int = Field(..., ge=0, le=23, description="Start hour (0-23)")
+    endTime: int = Field(..., ge=0, le=23, description="End hour (0-23)")
+
+class BulkAvailabilityRequest(BaseModel):
+    slots: List[Dict[str, Any]] = Field(..., description="List of availability slots")
+
 async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGuidesAuth = Depends(get_auth_manager)) -> int:
     if not authorization:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -253,4 +261,152 @@ async def check_can_rate(sid: int, current_user: int = Depends(get_current_user)
         }
     except Exception as e:
         logger.error(f"Check can rate error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Get tutor availability
+@router.get("/tutors/{tid}/availability", response_model=List[Dict[str, Any]])
+async def get_tutor_availability(tid: int, tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
+    try:
+        from db.Availability import GatorGuidesAvailability
+        availability_mgr = GatorGuidesAvailability()
+        
+        availability = availability_mgr.get_tutor_availability(tid)
+        return availability
+        
+    except Exception as e:
+        logger.error(f"Get availability error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Add availability slot
+@router.post("/tutors/{tid}/availability", response_model=Dict[str, Any])
+async def add_tutor_availability(
+    tid: int,
+    request: AddAvailabilityRequest,
+    current_user: int = Depends(get_current_user),
+    tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)
+):
+    try:
+        from db.Availability import GatorGuidesAvailability
+        availability_mgr = GatorGuidesAvailability()
+        
+        # Verify the user owns this tutor profile
+        tutor = tutors_mgr.get_tutor_by_uid(current_user)
+        if not tutor or tutor['tid'] != tid:
+            raise HTTPException(status_code=403, detail="You can only manage your own availability")
+        
+        availability = availability_mgr.add_availability(
+            tid=tid,
+            day=request.day,
+            start_time=request.startTime,
+            end_time=request.endTime
+        )
+        
+        if availability:
+            return availability
+        else:
+            raise HTTPException(status_code=400, detail="Failed to add availability")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Add availability error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Set bulk availability (replace all)
+@router.put("/tutors/{tid}/availability", response_model=Dict[str, Any])
+async def set_bulk_availability(
+    tid: int,
+    request: BulkAvailabilityRequest,
+    current_user: int = Depends(get_current_user),
+    tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)
+):
+    try:
+        from db.Availability import GatorGuidesAvailability
+        availability_mgr = GatorGuidesAvailability()
+        
+        # Verify the user owns this tutor profile
+        tutor = tutors_mgr.get_tutor_by_uid(current_user)
+        if not tutor or tutor['tid'] != tid:
+            raise HTTPException(status_code=403, detail="You can only manage your own availability")
+        
+        success = availability_mgr.set_bulk_availability(tid, request.slots)
+        
+        if success:
+            return {"message": "Availability updated successfully", "tid": tid}
+        else:
+            raise HTTPException(status_code=400, detail="Failed to update availability")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Set bulk availability error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Delete availability slot
+@router.delete("/tutors/{tid}/availability/{availability_id}", response_model=Dict[str, Any])
+async def delete_availability(
+    tid: int,
+    availability_id: int,
+    current_user: int = Depends(get_current_user),
+    tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)
+):
+    try:
+        from db.Availability import GatorGuidesAvailability
+        availability_mgr = GatorGuidesAvailability()
+        
+        # Verify the user owns this tutor profile
+        tutor = tutors_mgr.get_tutor_by_uid(current_user)
+        if not tutor or tutor['tid'] != tid:
+            raise HTTPException(status_code=403, detail="You can only manage your own availability")
+        
+        success = availability_mgr.remove_availability(availability_id, tid)
+        
+        if success:
+            return {"message": "Availability slot removed", "availabilityID": availability_id}
+        else:
+            raise HTTPException(status_code=404, detail="Availability slot not found")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Delete availability error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Check if time is available
+@router.get("/tutors/{tid}/availability/check", response_model=Dict[str, Any])
+async def check_time_availability(tid: int, day: str, time: int):
+    try:
+        from db.Availability import GatorGuidesAvailability
+        availability_mgr = GatorGuidesAvailability()
+        
+        is_available = availability_mgr.check_availability(tid, day, time)
+        
+        return {
+            "tid": tid,
+            "day": day,
+            "time": time,
+            "available": is_available
+        }
+        
+    except Exception as e:
+        logger.error(f"Check availability error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Get available times for a specific day
+@router.get("/tutors/{tid}/availability/day/{day}", response_model=Dict[str, Any])
+async def get_available_times(tid: int, day: str):
+    try:
+        from db.Availability import GatorGuidesAvailability
+        availability_mgr = GatorGuidesAvailability()
+        
+        available_times = availability_mgr.get_available_times_for_day(tid, day)
+        
+        return {
+            "tid": tid,
+            "day": day,
+            "availableTimes": available_times
+        }
+        
+    except Exception as e:
+        logger.error(f"Get available times error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
