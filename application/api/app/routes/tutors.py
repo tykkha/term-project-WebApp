@@ -118,14 +118,8 @@ async def get_tutor_by_user_id(uid: int, tutors_mgr: GatorGuidesTutors = Depends
 
 # Create a tutor from existing user
 @router.post("/tutors", response_model=Dict[str, Any])
-async def create_tutor(request: CreateTutorRequest, current_user: int = Depends(get_current_user), tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
+async def create_tutor(request: CreateTutorRequest, current_admin: int = Depends(get_current_admin), tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)):
     try:
-        if current_user != request.uid:
-            raise HTTPException(
-                status_code=403,
-                detail="You can only create a tutor profile for yourself"
-            )
-        
         tutor = tutors_mgr.create_tutor(
             uid=request.uid,
             rating=request.rating,
@@ -133,7 +127,7 @@ async def create_tutor(request: CreateTutorRequest, current_user: int = Depends(
         )
         
         if tutor:
-            logger.info(f"Tutor created: tid={tutor['tid']}, uid={tutor['uid']}")
+            logger.info(f"Admin {current_admin} created tutor: tid={tutor['tid']}, uid={tutor['uid']}")
             return tutor
         else:
             raise HTTPException(
