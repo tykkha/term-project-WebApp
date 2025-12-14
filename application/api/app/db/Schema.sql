@@ -71,6 +71,7 @@ CREATE TABLE Sessions
     tagsID    INT NOT NULL,
     day       ENUM ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'),
     time      INT CHECK (time >= 0 AND time <= 23),
+    location  ENUM ('Library', 'Zoom', 'Caeser Chavez') NOT NULL DEFAULT 'Zoom',
     started   DATETIME DEFAULT NULL,
     concluded DATETIME DEFAULT NULL,
     FOREIGN KEY (tid) REFERENCES Tutor (tid) ON DELETE CASCADE,
