@@ -468,3 +468,43 @@ export async function getAvailableTimesForDay(tid: number, day: string): Promise
 	const data = await res.json();
 	return data.availableTimes || [];
 }
+
+/* ---------- POSTS ---------- */
+
+export interface Post {
+    pid: number;
+    tid: number;
+    tagsID: number;
+    content: string;
+    timestamp?: string; 
+}
+
+export interface CreatePostPayload {
+    tid: number;
+    tagsID: number;
+    content: string;
+}
+
+// Creates a new post for a tutor profile
+export async function createPost(payload: CreatePostPayload): Promise<Post> {
+    const res = await authFetch(`${API_BASE}/posts`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+        let errMsg = 'Failed to create post';
+        try {
+            const err = await res.json();
+            if (err?.detail) errMsg = err.detail;
+        } catch {
+            /* ignore */
+        }
+        throw new Error(errMsg);
+    }
+
+    return res.json();
+}
