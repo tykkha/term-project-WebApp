@@ -37,6 +37,8 @@ class GatorGuidesSearch:
                 cursor.execute(all_tutors_query)
                 posts_by_tag = cursor.fetchall()
             else:
+                normalized_query = query.replace(' ', '').lower()
+                
                 tag_search_query = """
                     SELECT 
                         p.pid, p.tid, p.content, p.timestamp,
@@ -47,11 +49,11 @@ class GatorGuidesSearch:
                     INNER JOIN Tags tg ON p.tagsID = tg.tagsID
                     INNER JOIN Tutor tutor ON p.tid = tutor.tid
                     INNER JOIN User u ON tutor.uid = u.uid
-                    WHERE tg.tags LIKE %s
+                    WHERE REPLACE(LOWER(tg.tags), ' ', '') LIKE %s
                     AND tutor.verificationStatus = 'approved'
                     ORDER BY tutor.rating DESC, p.timestamp DESC
                 """
-                cursor.execute(tag_search_query, (f'%{query}%',))
+                cursor.execute(tag_search_query, (f'%{normalized_query}%',))
                 posts_by_tag = cursor.fetchall()
 
             unique_tids = set()
@@ -79,7 +81,7 @@ class GatorGuidesSearch:
                     'pid': post['pid'],
                     'course': post['post_tag'],
                     'content': post['content'],
-                    'timestamp': post['timestamp']
+                    'timestamp': post['timestamp'].isoformat() if hasattr(post['timestamp'], 'isoformat') else str(post['timestamp'])
                 })
                 tag_tutor_data[tid]['courses'].add(post['post_tag'])
 
@@ -162,7 +164,7 @@ class GatorGuidesSearch:
                             'pid': post['pid'],
                             'course': post['tags'],
                             'content': post['content'],
-                            'timestamp': post['timestamp']
+                            'timestamp': post['timestamp'].isoformat() if hasattr(post['timestamp'], 'isoformat') else str(post['timestamp'])
                         })
                         name_tutor_data[tid]['courses'].add(post['tags'])
 

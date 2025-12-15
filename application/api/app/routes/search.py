@@ -8,11 +8,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Searches for tutors based on tags and names
-@router.get("/search")
+@router.get("/search", response_model=List[Dict[str, Any]])
 @router.get("/search/{query}", response_model=List[Dict[str, Any]])
 async def search(query: str = "", search_db: GatorGuidesSearch = Depends(get_search_manager)):
     try:
-        results = search_db.search(query)
+        search_query = query.strip() if query else ""
+        results = search_db.search(search_query)
         return results
     except Exception as e:
         logger.error(f"Search error: {str(e)}", exc_info=True)
