@@ -445,3 +445,32 @@ async def reject_tutor(
     except Exception as e:
         logger.error(f"Reject tutor error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+    
+# Approve tutor application
+@router.put("/tutors/{tid}/approve", response_model=Dict[str, Any])
+async def approve_tutor(
+    tid: int,
+    current_admin: int = Depends(get_current_admin),
+    tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)
+):
+    try:
+        success = tutors_mgr.approve_tutor(tid)
+        
+        if success:
+            logger.info(f"Admin {current_admin} accepted tutor {tid}")
+            return {
+                "message": "Tutor application approved",
+                "tid": tid,
+                "verificationStatus": "approved"
+            }
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Approval failed. Tutor may not exist or is not in 'pending' status."
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Approval tutor error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))

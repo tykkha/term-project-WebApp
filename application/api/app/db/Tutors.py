@@ -665,3 +665,43 @@ class GatorGuidesTutors:
         finally:
             if conn:
                 conn.close()
+
+    def approve_tutor(self, tid: int) -> bool:
+        conn = None
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            # Check current status
+            check_query = "SELECT verificationStatus FROM Tutor WHERE tid = %s"
+            cursor.execute(check_query, (tid,))
+            tutor = cursor.fetchone()
+            
+            if not tutor:
+                logger.error(f"Tutor {tid} does not exist")
+                cursor.close()
+                return False
+            
+            if tutor['verificationStatus'] != 'pending':
+                logger.error(f"Tutor {tid} is not pending (current status: {tutor['verificationStatus']})")
+                cursor.close()
+                return False
+            
+            # Update to approved
+            update_query = "UPDATE Tutor SET verificationStatus = 'approved' WHERE tid = %s"
+            cursor.execute(update_query, (tid,))
+            rowcount = cursor.rowcount
+            cursor.close()
+            
+            if rowcount > 0:
+                logger.info(f"Tutor {tid} accepted (status set to approved)")
+                return True
+            
+            return False
+
+        except Exception as e:
+            logger.error(f"Tutor approval error: {e}", exc_info=True)
+            return False
+        finally:
+            if conn:
+                conn.close()
