@@ -547,9 +547,12 @@
 								<div class="grid grid-cols-2 gap-4 text-sm">
 									<div>
 										<p class="text-gray-600">Tutor</p>
-										<p class="font-semibold text-gray-800">
+										<a
+											href={`/tutor/${session.tutor.tid}`}
+											class="font-semibold text-gray-800 hover:text-purple-700"
+										>
 											{session.tutor.name}
-										</p>
+										</a>
 									</div>
 									<div>
 										<p class="text-gray-600">Schedule</p>
@@ -580,9 +583,12 @@
 								<div class="grid grid-cols-2 gap-4 text-sm">
 									<div>
 										<p class="text-gray-600">Tutor</p>
-										<p class="font-semibold text-gray-800">
+										<a
+											href={`/tutor/${session.tutor.tid}`}
+											class="font-semibold text-gray-800 hover:text-purple-700"
+										>
 											{session.tutor.name}
-										</p>
+										</a>
 									</div>
 									<div>
 										<p class="text-gray-600">Completed</p>
