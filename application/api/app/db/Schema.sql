@@ -11,7 +11,7 @@ CREATE TABLE User
     lastName       VARCHAR(255)                   NOT NULL,
     email          VARCHAR(255) UNIQUE            NOT NULL,
     password       VARCHAR(255)                   NOT NULL,
-    Type           ENUM ('user', 'admin'),
+    Type           ENUM ('user', 'admin')         NOT NULL,
     phone          VARCHAR(255),
     studentID      VARCHAR(255),
     profilePicture VARCHAR(255),
@@ -34,7 +34,7 @@ CREATE TABLE Tutor
     uid                INT NOT NULL,
     rating             DOUBLE,
     status             ENUM ('available', 'away', 'busy')         DEFAULT 'available',
-    verificationStatus ENUM ('unapproved', 'pending', 'approved') DEFAULT 'unapproved',
+    verificationStatus ENUM ('unapproved', 'pending', 'approved') DEFAULT 'pending',
     FOREIGN KEY (uid) REFERENCES User (uid) ON DELETE CASCADE
 );
 

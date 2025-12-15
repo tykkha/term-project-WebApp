@@ -83,7 +83,7 @@ class GatorGuidesTutors:
             # Make newly created tutors "approved" so they appear on the student dashboard
             query = """
                     INSERT INTO Tutor (uid, rating, status, verificationStatus)
-                    VALUES (%s, %s, %s, 'unapproved')
+                    VALUES (%s, %s, %s, 'pending')
                     """
             cursor.execute(query, (uid, rating, status))
             tutor_id = cursor.lastrowid
@@ -96,7 +96,7 @@ class GatorGuidesTutors:
                 'email': user['email'],
                 'rating': rating,
                 'status': status,
-                'verificationStatus': 'unapproved'
+                'verificationStatus': 'pending'
             }
 
         except Exception as e:
@@ -538,6 +538,129 @@ class GatorGuidesTutors:
 
         except Exception as e:
             logger.error(f"Check rating eligibility error: {e}", exc_info=True)
+            return False
+        finally:
+            if conn:
+                conn.close()
+
+    def get_pending_tutors(self) -> List[Dict[str, Any]]:
+        conn = None
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            # Get all pending tutors
+            query = """
+                    SELECT
+                        t.tid,
+                        t.uid,
+                        u.firstName,
+                        u.lastName,
+                        u.email,
+                        u.bio,
+                        u.profilePicture,
+                        COALESCE(t.rating, 0) AS rating,
+                        t.status,
+                        t.verificationStatus
+                    FROM Tutor t
+                             INNER JOIN User u ON t.uid = u.uid
+                    WHERE t.verificationStatus = 'pending'
+                    ORDER BY t.tid ASC
+                    """
+            cursor.execute(query)
+            tutors = cursor.fetchall()
+
+            if not tutors:
+                cursor.close()
+                return []
+
+            # Get all tutor IDs
+            tutor_ids = [t['tid'] for t in tutors]
+
+            tags_query = """
+                         SELECT tt.tid, tg.tagsID, tg.tags
+                         FROM TutorTags tt
+                                  INNER JOIN Tags tg ON tt.tagsID = tg.tagsID
+                         WHERE tt.tid IN (%s)
+                         ORDER BY tt.tid, tg.tags
+                         """ % ','.join(['%s'] * len(tutor_ids))
+
+            cursor.execute(tags_query, tutor_ids)
+            all_tags = cursor.fetchall()
+            cursor.close()
+
+            # Group tags by tutor ID
+            tags_by_tutor = {}
+            for tag in all_tags:
+                tid = tag['tid']
+                if tid not in tags_by_tutor:
+                    tags_by_tutor[tid] = []
+                tags_by_tutor[tid].append({
+                    'id': tag['tagsID'],
+                    'name': tag['tags']
+                })
+
+            # Build results with tags included
+            results: List[Dict[str, Any]] = []
+            for tutor in tutors:
+                tid = tutor['tid']
+                results.append({
+                    'tid': tid,
+                    'uid': tutor['uid'],
+                    'name': f"{tutor['firstName']} {tutor['lastName']}",
+                    'email': tutor['email'],
+                    'bio': tutor['bio'],
+                    'profilePicture': tutor['profilePicture'],
+                    'rating': float(tutor['rating']) if tutor['rating'] is not None else 0.0,
+                    'status': tutor['status'],
+                    'verificationStatus': tutor['verificationStatus'],
+                    'tags': tags_by_tutor.get(tid, [])
+                })
+
+            return results
+
+        except Exception as e:
+            logger.error(f"Get pending tutors error: {e}", exc_info=True)
+            return []
+        finally:
+            if conn:
+                conn.close()
+
+    def reject_tutor(self, tid: int) -> bool:
+        conn = None
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            # Check current status
+            check_query = "SELECT verificationStatus FROM Tutor WHERE tid = %s"
+            cursor.execute(check_query, (tid,))
+            tutor = cursor.fetchone()
+            
+            if not tutor:
+                logger.error(f"Tutor {tid} does not exist")
+                cursor.close()
+                return False
+            
+            if tutor['verificationStatus'] != 'pending':
+                logger.error(f"Tutor {tid} is not pending (current status: {tutor['verificationStatus']})")
+                cursor.close()
+                return False
+            
+            # Update to unapproved
+            update_query = "UPDATE Tutor SET verificationStatus = 'unapproved' WHERE tid = %s"
+            cursor.execute(update_query, (tid,))
+            rowcount = cursor.rowcount
+            cursor.close()
+            
+            if rowcount > 0:
+                logger.info(f"Tutor {tid} rejected (status set to unapproved)")
+                return True
+            
+            return False
+
+        except Exception as e:
+            logger.error(f"Reject tutor error: {e}", exc_info=True)
             return False
         finally:
             if conn:

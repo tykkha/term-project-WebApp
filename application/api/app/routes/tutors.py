@@ -401,3 +401,47 @@ async def get_available_times(tid: int, day: str):
     except Exception as e:
         logger.error(f"Get available times error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+    
+# Get all pending tutors
+@router.get("/tutors/pending", response_model=List[Dict[str, Any]])
+async def get_pending_tutors(
+    current_admin: int = Depends(get_current_admin),
+    tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)
+):
+    try:
+        results = tutors_mgr.get_pending_tutors()
+        logger.info(f"Admin {current_admin} retrieved {len(results)} pending tutors")
+        return results
+    except Exception as e:
+        logger.error(f"Get pending tutors error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Reject tutor application
+@router.put("/tutors/{tid}/reject", response_model=Dict[str, Any])
+async def reject_tutor(
+    tid: int,
+    current_admin: int = Depends(get_current_admin),
+    tutors_mgr: GatorGuidesTutors = Depends(get_tutors_manager)
+):
+    try:
+        success = tutors_mgr.reject_tutor(tid)
+        
+        if success:
+            logger.info(f"Admin {current_admin} rejected tutor {tid}")
+            return {
+                "message": "Tutor application rejected",
+                "tid": tid,
+                "verificationStatus": "unapproved"
+            }
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Rejection failed. Tutor may not exist or is not in 'pending' status."
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Reject tutor error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
