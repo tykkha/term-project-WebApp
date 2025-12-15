@@ -82,6 +82,8 @@ export interface RegisterPayload {
 	lastName: string;
 	email: string;
 	password: string;
+	phone: string | null;
+	studentId: string | null;
 	profilePicture?: string | null;
 	bio?: string | null;
 }

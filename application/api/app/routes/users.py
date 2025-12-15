@@ -23,6 +23,8 @@ class RegisterRequest(BaseModel):
     lastName: str = Field(..., min_length=1, max_length=255)
     email: str
     password: str = Field(..., min_length=8, description="Password must be at least 8 characters")
+    phone: Optional[str] = None
+    studentID: Optional[str] = None
     profilePicture: Optional[str] = None
     bio: Optional[str] = None
     
@@ -82,6 +84,8 @@ async def register_user(request: RegisterRequest, users_mgr: GatorGuidesUsers = 
             email=request.email,
             password=request.password,
             user_type='user',
+            phone=request.phone,
+            studentID=request.studentID,
             profile_picture=request.profilePicture,
             bio=request.bio
         )

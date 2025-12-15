@@ -21,7 +21,7 @@ class GatorGuidesUsers:
     def _verify_password(self, password: str, hashed: str) -> bool:
         return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
-    def create_user(self, first_name: str, last_name: str, email: str, password: str, user_type: str = 'user', profile_picture: Optional[str] = None, bio: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def create_user(self, first_name: str, last_name: str, email: str, password: str, user_type: str = 'user', phone: Optional[str] = None, studentID: Optional[str] = None, profile_picture: Optional[str] = None, bio: Optional[str] = None) -> Optional[Dict[str, Any]]:
         conn = None
         try:
             if user_type not in ['user', 'admin']:
@@ -36,13 +36,13 @@ class GatorGuidesUsers:
 
             # Insert new user
             query = """
-                INSERT INTO User (firstName, lastName, email, password, Type, profilePicture, bio)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO User (firstName, lastName, email, password, Type, phone, studentID, profilePicture, bio)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             
             cursor.execute(
                 query,
-                (first_name, last_name, email, hashed_password, user_type, profile_picture, bio)
+                (first_name, last_name, email, hashed_password, user_type, phone, studentID, profile_picture, bio)
             )
             user_id = cursor.lastrowid
             cursor.close()
@@ -54,6 +54,8 @@ class GatorGuidesUsers:
                 'lastName': last_name,
                 'email': email,
                 'type': user_type,
+                'phone': phone,
+                'studentID': studentID,
                 'profilePicture': profile_picture,
                 'bio': bio
             }
@@ -75,7 +77,7 @@ class GatorGuidesUsers:
             cursor = conn.cursor(dictionary=True)
             
             query = """
-                SELECT uid, firstName, lastName, email, password, Type, profilePicture, bio
+                SELECT uid, firstName, lastName, email, password, Type, phone, studentID, profilePicture, bio
                 FROM User
                 WHERE email = %s
             """
@@ -90,7 +92,7 @@ class GatorGuidesUsers:
 
             # Verify password
             if not self._verify_password(password, user['password']):
-                logger.warning(f"Authentication failed: invalid password")
+                logger.warning(f"Authentication failed: invalid username or password")
                 return None
 
             # Return user info
@@ -100,6 +102,8 @@ class GatorGuidesUsers:
                 'lastName': user['lastName'],
                 'email': user['email'],
                 'type': user['Type'],
+                'phone': user['phone'],
+                'studentID': user['studentID'],
                 'profilePicture': user['profilePicture'],
                 'bio': user['bio']
             }
@@ -118,7 +122,7 @@ class GatorGuidesUsers:
             cursor = conn.cursor(dictionary=True)
             
             query = """
-                SELECT uid, firstName, lastName, email, Type, profilePicture, bio
+                SELECT uid, firstName, lastName, email, Type, phone, studentID, profilePicture, bio
                 FROM User
                 WHERE uid = %s
             """
@@ -134,6 +138,8 @@ class GatorGuidesUsers:
                     'lastName': user['lastName'],
                     'email': user['email'],
                     'type': user['Type'],
+                    'phone': user['phone'],
+                    'studentID': user['studentID'],
                     'profilePicture': user['profilePicture'],
                     'bio': user['bio']
                 }

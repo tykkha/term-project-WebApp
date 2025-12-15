@@ -12,6 +12,8 @@ CREATE TABLE User
     email          VARCHAR(255) UNIQUE            NOT NULL,
     password       VARCHAR(255)                   NOT NULL,
     Type           ENUM ('user', 'admin'),
+    phone          VARCHAR(255),
+    studentID      VARCHAR(255),
     profilePicture VARCHAR(255),
     bio            TEXT
 );
@@ -68,12 +70,12 @@ CREATE TABLE Sessions
     sid       INT PRIMARY KEY AUTO_INCREMENT,
     tid       INT,
     uid       INT,
-    tagsID    INT NOT NULL,
+    tagsID    INT                                       NOT NULL,
     day       ENUM ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'),
     time      INT CHECK (time >= 0 AND time <= 23),
     location  ENUM ('Library', 'Zoom', 'Caeser Chavez') NOT NULL DEFAULT 'Zoom',
-    started   DATETIME DEFAULT NULL,
-    concluded DATETIME DEFAULT NULL,
+    started   DATETIME                                           DEFAULT NULL,
+    concluded DATETIME                                           DEFAULT NULL,
     FOREIGN KEY (tid) REFERENCES Tutor (tid) ON DELETE CASCADE,
     FOREIGN KEY (uid) REFERENCES User (uid) ON DELETE CASCADE,
     FOREIGN KEY (tagsID) REFERENCES Tags (tagsID) ON DELETE CASCADE
@@ -124,10 +126,10 @@ DROP TABLE IF EXISTS TutorAvailability;
 CREATE TABLE TutorAvailability
 (
     availabilityID INT PRIMARY KEY AUTO_INCREMENT,
-    tid            INT NOT NULL,
+    tid            INT                                                                                 NOT NULL,
     day            ENUM ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday') NOT NULL,
-    startTime      INT NOT NULL CHECK (startTime >= 0 AND startTime <= 23),
-    endTime        INT NOT NULL CHECK (endTime >= 0 AND endTime <= 23),
+    startTime      INT                                                                                 NOT NULL CHECK (startTime >= 0 AND startTime <= 23),
+    endTime        INT                                                                                 NOT NULL CHECK (endTime >= 0 AND endTime <= 23),
     isActive       BOOLEAN DEFAULT TRUE,
     FOREIGN KEY (tid) REFERENCES Tutor (tid) ON DELETE CASCADE,
     UNIQUE KEY unique_availability (tid, day, startTime, endTime)

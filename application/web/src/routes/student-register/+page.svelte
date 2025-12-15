@@ -73,9 +73,10 @@
             lastName: form.lastName,
             email: form.email,
             password: form.password,
+            phone: form.phone || null,
+            studentId: form.studentId || null,
             profilePicture: form.profilePicture || null,
-            // extra info stored in bio so backend still validates
-            bio: `Student ID: ${form.studentId}, Phone: ${form.phone}`
+            bio: `New User: ${form.firstName} ${form.lastName}, Student ID: ${form.studentId}`
         };
 
         try {
