@@ -1,14 +1,27 @@
 <script lang="ts">
     import { page } from '$app/state';
+    import { onMount } from 'svelte';
     import {
+        getCurrentUser,
+        authFetch,
         getTutorAvailability,
         addAvailabilitySlot,
         deleteAvailabilitySlot,
-        type AvailabilitySlot
+        type AvailabilitySlot,
+		type User,
+		type TutorResponse
     } from '$lib/api'; 
+	import { goto } from '$app/navigation';
+    
 
-    // --- State Management ---
-    const tutorId = parseInt(page.params.slug, 10); // Get tutor ID from URL
+    // Pull tutor ID from URL
+    const tutorId = page.params.slug;
+    const tutorIdNum = Number(tutorId);
+
+    // Check current user and tutor status
+    let isTutor = $state(false); 
+    let uData = $state<User | null>(getCurrentUser());
+    let tData = $state<TutorResponse>();
     
     // Availability Data
     let availabilitySlots = $state<AvailabilitySlot[]>([]);
@@ -22,13 +35,10 @@
     let newEndTimeStr = $state(''); 
     let isSubmitting = $state(false);
 
-
-    // --- Utility Functions ---
-
     const formatDate = (date: Date) => date.toISOString().split('T')[0];
     const formatDayName = (date: Date) => date.toLocaleDateString('en-US', { weekday: 'long' });
 
-    // List up to the next N days for availability setting
+    // List up to the next 7 days for availability setting
     const getNextDays = (count: number = 7) => {
         const dates = [];
         const today = new Date();
@@ -47,9 +57,7 @@
     };
     const nextDaysOptions = getNextDays(7);
 
-    /**
-     * Generate hourly slots (04:00 to 20:00)
-     */
+    // Generate hourly slots (04:00 to 20:00)
     const generateTimeSlots = (start: number = 4, end: number = 20): string[] => {
         const slots: string[] = [];
         for (let h = start; h <= end; h++) {
@@ -59,10 +67,7 @@
     };
     const startTimeSlots = generateTimeSlots(4, 19); // Start times up to 20:00
 
-    /**
-     * Generate end time slots based on the selected start time.
-     * End time must be at least 1 hour after start time, up to 20:00.
-     */
+    // Generate end time slots based on the selected start time + 1 hour
     const generateEndTimes = (startTimeStr: string): string[] => {
         if (!startTimeStr) return [];
         
@@ -75,8 +80,6 @@
         }
         return slots;
     }
-    
-    // Derived property to feed the end time select options
     let endTimeSlots = $derived(generateEndTimes(newStartTimeStr));
 
     // Reset end time if start time changes and the selected end time is no longer valid
@@ -101,15 +104,12 @@
             return timeA.localeCompare(timeB);
         })
     );
-
-
-    // --- Data Fetching ---
     
     async function loadAvailability() {
         isLoading = true;
         error = null;
         try {
-            const slots = await getTutorAvailability(tutorId);
+            const slots = await getTutorAvailability(tutorIdNum);
             availabilitySlots = slots.filter(slot => slot.isActive !== false); 
         } catch (err) {
             console.error("Failed to load availability:", err);
@@ -124,9 +124,6 @@
         loadAvailability();
     });
 
-
-    // --- Action Handlers ---
-
     async function handleAddSlot(event: Event) {
         event.preventDefault(); 
         error = null;
@@ -139,11 +136,10 @@
             return;
         }
 
-        // 1. Prepare Data
         const startTimeHour = parseInt(newStartTimeStr.split(':')[0], 10);
         const endTimeHour = parseInt(newEndTimeStr.split(':')[0], 10);
         
-        // Basic validation (though covered by the generated slots, it's good for safety)
+        // Check that end time is after start time
         if (endTimeHour <= startTimeHour) {
              error = 'End time must be after the start time.';
              isSubmitting = false;
@@ -151,8 +147,8 @@
         }
         
         try {
-            // API call to add the slot
-            const newSlot = await addAvailabilitySlot(tutorId, newDay, startTimeHour, endTimeHour);
+            console.log('Adding slot:', { tutorIdNum, newDay, startTimeHour, endTimeHour });
+            const newSlot = await addAvailabilitySlot(tutorIdNum, newDay, startTimeHour, endTimeHour);
 
             // Update local state with the new slot
             availabilitySlots = [...availabilitySlots, newSlot];
@@ -161,7 +157,7 @@
             successMessage = `Availability set for ${newDay} from ${newStartTimeStr} to ${newEndTimeStr}.`;
             newDay = '';
             newStartTimeStr = '';
-            newEndTimeStr = ''; // Reset both time fields
+            newEndTimeStr = ''; 
 
         } catch (err: any) {
             console.error('Error adding slot:', err);
@@ -178,7 +174,7 @@
         successMessage = null;
         
         try {
-            await deleteAvailabilitySlot(tutorId, availabilityID);
+            await deleteAvailabilitySlot(tutorIdNum, availabilityID);
             availabilitySlots = availabilitySlots.filter(slot => slot.availabilityID !== availabilityID);
             successMessage = 'Availability slot removed successfully.';
             
@@ -188,14 +184,34 @@
         }
     }
 
-    // Helper to format the time number back to HH:00 string
-    const formatTimeHour = (hour: number) => `${String(hour).padStart(2, '0')}:00`;
+    async function validTutor() {
+        const user = getCurrentUser();
+        if (uData) {
+            console.log('Current User Data:', uData);
+            const tutorRes = await authFetch(`/api/tutors/by-user/${uData.uid}`);
+            tData = await tutorRes.json();
+            console.log('Current Tutor Data:', tData);
+            if (tData?.tid == tutorIdNum) {
+                console.log('User is the tutor for this page.');
+                isTutor = true;
+            } else {
+                goto(`/tutor/${tutorIdNum}`);
+            } 
+        } else {
+            console.log('No user logged in, redirecting to login page.');
+            goto('/login');
+        }
+    }    
 
+    const formatTimeHour = (hour: number) => `${String(hour).padStart(2, '0')}:00`;
+    onMount(() => {
+		validTutor();
+	});
 </script>
 
 <div class="min-h-screen min-w-screen bg-neutral-100">
     <div class="p-4">
-        <a href="/tutor/{tutorId}" class="hover:underline text-[#231161]">← Back to Tutor Profile</a>
+        <a href="/tutor/{tutorIdNum}" class="hover:underline text-[#231161]">← Back to Tutor Profile</a>
     </div>
 
     <div class="flex gap-8 p-8 justify-center">
@@ -229,7 +245,7 @@
                         >
                             <option value="" disabled selected>Select a day</option>
                             {#each nextDaysOptions as dayOption}
-                                <option value={dayOption.isoDate}>{dayOption.display}</option>
+                                <option value={dayOption.dayName}>{dayOption.dayName}</option>
                             {/each}
                         </select>
                     </div>
@@ -274,10 +290,7 @@
                         class="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#231161] hover:bg-[#2d1982] text-white py-3 px-6 rounded-xl text-md font-semibold transition-colors disabled:opacity-50"
                         disabled={isSubmitting || !newDay || !newStartTimeStr || !newEndTimeStr}
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus">
-                            <path d="M5 12h14"/><path d="M12 5v14"/>
-                        </svg>
-                        {isSubmitting ? 'Adding...' : 'Add Slot'}
+                       {isSubmitting ? 'Adding...' : 'Add Slot'}
                     </button>
                 </form>
             </div>
@@ -290,9 +303,6 @@
                     disabled={isLoading || isSubmitting}
                     class="flex items-center gap-1 text-sm text-[#231161] hover:text-[#2d1982] disabled:opacity-50 transition"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class:animate-spin={isLoading}>
-                        <path d="M3 2v6h6"/><path d="M21 22v-6h-6"/><path d="M21 16a9 9 0 0 0-9-9H3"/><path d="M3 8a9 9 0 0 0 9 9h9"/>
-                    </svg>
                     {isLoading ? 'Refreshing...' : 'Refresh'}
                 </button>
             </div>
@@ -309,7 +319,7 @@
                         <li class="flex justify-between items-center p-4 bg-gray-50 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition">
                             <div class="flex flex-col">
                                 <span class="text-lg font-semibold text-gray-800">
-                                    {formatDayName(new Date(slot.day))} - {new Date(slot.day).toLocaleDateString()}
+                                    {slot.day}
                                 </span>
                                 <span class="text-md text-gray-600">
                                     {formatTimeHour(slot.startTime)} to {formatTimeHour(slot.endTime)}
@@ -318,11 +328,8 @@
                             <button 
                                 onclick={() => handleDeleteSlot(slot.availabilityID)}
                                 class="p-2 text-red-600 hover:bg-red-100 rounded-full transition"
-                                title="Remove Slot"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x">
-                                    <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-                                </svg>
+                                X
                             </button>
                         </li>
                     {/each}
