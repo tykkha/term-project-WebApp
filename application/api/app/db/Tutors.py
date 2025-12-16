@@ -44,12 +44,7 @@ class GatorGuidesTutors:
             if conn:
                 conn.close()
 
-    def create_tutor(
-            self,
-            uid: int,
-            rating: float = 0.0,
-            status: str = 'available'
-    ) -> Optional[Dict[str, Any]]:
+    def create_tutor(self, uid: int, rating: float = 0.0, status: str = 'available') -> Optional[Dict[str, Any]]:
         conn = None
         try:
             valid_statuses = ['available', 'away', 'busy']
@@ -80,7 +75,6 @@ class GatorGuidesTutors:
                 cursor.close()
                 return None
 
-            # Make newly created tutors "approved" so they appear on the student dashboard
             query = """
                     INSERT INTO Tutor (uid, rating, status, verificationStatus)
                     VALUES (%s, %s, %s, 'pending')
