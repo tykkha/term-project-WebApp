@@ -1,148 +1,123 @@
- <script lang="ts">
-	import { page } from '$app/state';
+<script lang="ts">
+	import { goto } from '$app/navigation';
+    import { page } from '$app/state';
     import {
-		getCurrentUser,
-		type User,
-        getTags,
+        getCurrentUser,
+        type User,
         type Tag,
         createPost,
         type CreatePostPayload,
-		type TutorResponse,
+        type TutorResponse,
+        createReview,
+        type CreateReviewPayload,
+        getUserSessions, 
+        type Session, 
     } from '$lib/api';
     import { onMount } from 'svelte';
+
+    // Pull tutor ID from URL
+    const tutorId = page.params.slug;
+    const tutorIdNum = Number(tutorId);
 
     // Check current user and tutor status
     let isTutor = $state(false); 
     let uData = $state<User | null>(getCurrentUser());
     let tData = $state<TutorResponse>();
-
+        
     // Single instance of tutor profile
     interface Profile {
         photo: string;
         name: string;
         email: string;
-        tags: string[]; 
-        bio: string;
+        expertise: Tag[]; 
+        rating?: number;
+        bio?: string;
     }
 
-    // Should be an array to hold tutor's posted sessions
-    interface Session {
-        sId: number;
-        tId: number;
-        course: string;
-        date: string;
-        timeStart: string;
-        timeEnd: string;
-        location?: string;
+    // Tutor's available sessions 
+    interface AvailableTutorSessions {
+        aId: number; 
+        tid: number;           
+        day: number;   
+        startTime: number;      
+        endTime: number;
+        isActive: boolean;
     }
 
-    // Should be an array to hold reviews of tutor
-    interface Review {
-        rId: number;
-        user: string;
-        rating: number;
-        feedback: string;
-        date: Date;
-    }
-    
     // Stores full tutor info 
     let profile = $state<Profile>({
         photo: '',
         name: '',
         email: '',
-        tags: [],
-        bio: ''
+        expertise: [],
+        bio: '',
     });
-    let sessions = $state([] as Session[]);
-    let reviews = $state([] as Review[])
-
-    // Temp id to pull data
-    const tutorId = page.params.slug;
-    const tutorIdNum = Number(tutorId);
-
-    // Pull full tutor info (profile, session, % review)
-    async function loadTutorPage () {
-        // profile pull 
-        try {
-            // Pull tutor profile 
-			const pResponse = await fetch(`/api/tutors/${encodeURIComponent(tutorIdNum)}`);
-			const pData = await pResponse.json();
-			profile = pData as Profile;
-
-            // Pull tutor's sessions
-            const sResponse = await fetch(`/api/tutors/${encodeURIComponent(tutorIdNum)}/sessions`);
-			const sData = await sResponse.json();
-			sessions = sData as Session[];
-
-            // Pull tutor's reviews TODO
-            const rResponse = await fetch(`/api/tutors/${encodeURIComponent(tutorIdNum)}`);
-			const rData = await rResponse.json();
-			reviews = rData as Review[];
-
-		} catch (error) {
-			console.error('Search failed:', error);
-        }
-    }
-
-    // Removes session from availability and adds to user session 
-    function scheduleSession(sessionId: number) {
-        alert(`Session added`); //TODO
-    }
-
-    // Form visibility state and tags for post creation
+    let tutorSessions = $state([] as AvailableTutorSessions[]);
+    
+    //  Post Form  
     let showPostForm = $state(false);
-    let tags = $state<Tag[]>([]);
     let isLoadingTags = $state(false);
-
-    // Form state for creating a new post
     let postForm = $state<Omit<CreatePostPayload, 'tid'>>({
         tagsID: 0, 
         content: ''
     });
 
-    // Submission state and messages
+    // Review Form 
+    let showReviewForm = $state(false);
+    let reviewErrorMessage = $state('');
+    let reviewSuccessMessage = $state('');
+    let isReviewSubmitting = $state(false);
+    let userReviewableSessions = $state<Session[]>([]); // Sessions the user can review
+    let isLoadingReviewableSessions = $state(false);
+
+    // Form state for creating a new review
+    let reviewForm = $state<CreateReviewPayload>({
+        tid: tutorIdNum,
+        uid: 0, // Will be set in loadCurrUserData
+        sid: 0, // Session ID selected by user
+        rating: 0, 
+    });
+
+    // Helper to format session info for the dropdown
+    function formatSession(session: Session): string {
+        const date = new Date(session.day).toLocaleDateString();
+        const time = `${session.time}:00`; 
+        return `${session.course} on ${date} at ${time}`;
+    }
+    
+    // Submission state and messages (shared for Post & Review)
     let isSubmitting = $state(false);
     let errorMessage = $state('');
     let successMessage = $state('');
 
-    // Function to load (all; need to change to only tutor listed) available tags/courses
-    async function loadTags() {
-        isLoadingTags = true;
+    // Pull full tutor info (profile, session, & review)
+    async function loadTutorPage () {
+        // Full profile pull 
         try {
-            tags = await getTags();
-            // Set default selected tag if available
-            if (tags.length > 0) {
-                postForm.tagsID = tags[0].id;
-            }
-        } catch (err) {
-            console.error('Failed to load tags:', err);
-            errorMessage = 'Failed to load courses. Cannot create post.';
-        } finally {
-            isLoadingTags = false;
-        }
-    }
+            // Pull tutor profile 
+            const pResponse = await fetch(`/api/tutors/${tutorIdNum}`);
+            const pData = await pResponse.json();
+            console.log('Tutor Profile Data:', pData);
+            profile = pData as Profile;
 
-    function openPostForm() {
-        showPostForm = true;
-        errorMessage = '';
-        successMessage = '';
-        postForm.content = '';
-        // Ensure tagsID is set if tags are loaded
-        if (tags.length > 0 && postForm.tagsID === 0) {
-             postForm.tagsID = tags[0].id;
+            // Pull tutor's available sessions
+            const aResponse = await fetch(`/api/tutors/${tutorIdNum}/sessions`);
+            const aData = await aResponse.json();
+            console.log('Tutor Availability Sessions Data:', aData);
+            tutorSessions = aData as AvailableTutorSessions[];
+        } catch (error) {
+            console.error('Search failed:', error);
         }
-    }
-
-    function closePostForm() {
-        showPostForm = false;
     }
 
     // Check if current user is the page's tutor, then load tutor data
-    async function loadTutorData() {
+    async function loadCurrUserData() {
         if (uData) {
-            const tutorRes = await fetch(`/api/tutors/by-user/${encodeURIComponent(uData.uid)}`);
+            console.log('Current User Data:', uData);
+            reviewForm.uid = uData.uid; // Set user ID for review form
+            const tutorRes = await fetch(`/api/tutors/by-user/${uData.uid}`);
             tData = await tutorRes.json();
-            console.log('Tutor Profile Data:', tData);
+            console.log('Current Tutor Data:', tData);
             if (tData && tData?.tid == tutorIdNum) {
                 console.log('User is the tutor for this page');
                 isTutor = true;
@@ -150,6 +125,20 @@
                 isTutor = false;
             } 
         }
+    }
+    
+    function openPostForm() {
+        showPostForm = true;
+        errorMessage = '';
+        successMessage = '';
+        postForm.content = '';
+        if (profile.expertise.length > 0 && postForm.tagsID === 0) {
+            postForm.tagsID = profile.expertise[0].id;
+        }
+    }
+
+    function closePostForm() {
+        showPostForm = false;
     }
 
     async function handlePostForm() {
@@ -168,11 +157,9 @@
                 tagsID: postForm.tagsID,
                 content: postForm.content.trim()
             };
-
-            const newPost = await createPost(payload);
+            await createPost(payload);
 
             successMessage = 'Post created successfully!';
-
             setTimeout(() => {
                 closePostForm();
             }, 1500);
@@ -183,116 +170,178 @@
             isSubmitting = false;
         }
     }
+
+    // Check if user can review tutor
+    async function loadReviewableSessions() {
+        if (!uData || isTutor) return; 
+
+        isLoadingReviewableSessions = true;
+        reviewErrorMessage = '';
+        userReviewableSessions = [];
+
+        try {
+            const allSessions = await getUserSessions(uData.uid);
+            const concludedSessionsWithCurrentTutor = allSessions.filter(s => 
+                 s.tutor.tid === tutorIdNum && s.concluded !== null
+            );
+            userReviewableSessions = concludedSessionsWithCurrentTutor;
+
+            if (userReviewableSessions.length === 0) {
+                reviewErrorMessage = "You have no concluded sessions with this tutor to review.";
+            } else {
+                reviewForm.sid = userReviewableSessions[0].sid; // Default to the first session
+            }
+
+        } catch (err) {
+            console.error('Failed to load reviewable sessions:', err);
+            reviewErrorMessage = 'Failed to load your past sessions. Please try again.';
+        } finally {
+            isLoadingReviewableSessions = false;
+        }
+    }
+
+    function openReviewForm() {
+        if (!uData) {
+            goto('/login');
+            return;
+        }
+        if (isTutor) {
+            alert('Tutors cannot review themselves.');
+            return;
+        }
+        
+        showReviewForm = true;
+        reviewErrorMessage = '';
+        reviewSuccessMessage = '';
+        reviewForm.rating = 0;
+        reviewForm.sid = 0;
+        loadReviewableSessions();
+    }
+
+    function closeReviewForm() {
+        showReviewForm = false;
+    }
+
+    async function handleReviewForm() {
+        if (reviewForm.sid === 0 || reviewForm.rating < 1 || reviewForm.rating > 5) {
+            reviewErrorMessage = 'Please select a session and provide a valid rating (1-5).';
+            return;
+        }
+
+        isReviewSubmitting = true;
+        reviewErrorMessage = '';
+        reviewSuccessMessage = '';
+
+        try {
+            const payload = {
+                tid: tutorIdNum,
+                uid: reviewForm.uid,
+                sid: reviewForm.sid,
+                rating: reviewForm.rating
+            };
+            await createReview(payload);
+
+            reviewSuccessMessage = 'Review submitted successfully! Thank you.';
+            setTimeout(() => {
+                closeReviewForm();
+            }, 1500);
+
+        } catch (err: any) {
+            console.error('Review submission error:', err);
+            reviewErrorMessage = err.message || 'An unexpected error occurred during review submission.';
+        } finally {
+            isReviewSubmitting = false;
+        }
+    }
     
     onMount(() => {
-        loadTags();
-        loadTutorData();
+        if (tutorIdNum == null || isNaN(tutorIdNum)) {
+            goto('/search');  
+            return;
+        }
+        loadCurrUserData();
         loadTutorPage();
     });
 </script>
 
-<!--Tutor page-->
+<!-- Tutor Profile Page Layout -->
 <div class="min-h-screen min-w-screen bg-neutral-100">
-	<div class="mx-auto flex flex-col p-8 md:flex-row">
+    <div class="mx-auto flex flex-col p-8 md:flex-row">
 
-        <!--Tutor profile & reviews col-->
-		<div class="w-full p-4 md:w-5/12">
-            <!--Tutor photo card-->
-			<h1>id: {page.params.slug}</h1>
+        <!-- Left Column: Tutor Profile & Actions -->
+        <div class="w-full p-4 md:w-5/12">
             <div class="mb-8 w-full rounded-2xl bg-white drop-shadow-lg transition duration-300 hover:scale-[1.02] hover:drop-shadow-2xl">
                 <img src={profile.photo} alt="{profile.name} Profile Photo" class="w-full h-auto rounded-xl">
             </div>
 
-            <!--Tutor name, tags, and bio card-->
             <div class="mb-8 w-full rounded-2xl bg-white p-4 drop-shadow-lg">
-                <h2 class="text-2xl underline text-center">{profile.name}</h2>
+               <div class="flex justify-between items-baseline">
+                    <div class="w-1/9"></div> 
+                    <h2 class="text-3xl underline text-center w-7/9">{profile.name}</h2>
+                    <div class="w-1/9">
+                        <h2 class="text-lg text-center rounded-full bg-green-100 text-green-700">
+                        {profile.rating ? profile.rating.toFixed(1) : '0.0'}
+                        </h2>
+                    </div> 
+                </div>
                 <p class="text-lg text-center">{profile.email}</p>
                 <div class="flex flex-wrap justify-center gap-2">
-                    {#each profile.tags as tag}
+                    {#each profile.expertise as tag}
                         <span class="bg-[#231161] text-white text-sm px-2 py-1 rounded shadow-md">
-                            {tag}
+                            {tag.name}
                         </span>
                     {/each}
                 </div>
                 <p class="p-3 text-base">{profile.bio}</p>
             </div>
 
-            <!--Tutor's reviews card-->
-            <div class="w-full rounded-2xl bg-white p-4 drop-shadow-lg">
-                <h2 class="mb-4 text-2xl underline text-center">Reviews</h2>
-                {#each reviews as review (review.rId)}
-                    <div class="mb-4 rounded-2xl p-3 shadow-sm">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-2xl bg-green-500 px-3 py-1">{review.rating}</span>
-                            <span class="font-bold text-xl">{review.user}</span>
-                        </div>
-						<div class="mb-2 flex flex-wrap gap-2">
-							{#each profile.tags as tag}
-								<span class="bg-[#231161] text-white text-sm px-2 py-1 rounded shadow-md">
-									{tag}
-								</span>
-							{/each}
-						</div>
-                        <div>
-                            <p class="text-base italic">"{review.feedback}"</p>
-                        </div>
-						<div class="flex flex-row-reverse items-center mb-2">
-                            <span class="font-bold text-xl">{review.date}</span>
-                        </div>
-                    </div>
-                {/each}
-                <div class="flex justify-center">
-                    <a href="./{tutorId}/review" class="bg-[#231161] hover:bg-[#2d1982] text-white py-2 px-3 rounded">
-                        Leave a Review!
-                    </a>
-                </div>
-            </div>
-
-            <!-- TEMP Create Post Button Location -->
-            <div>
-                <button
-                    onclick={openPostForm}
-                    disabled={isLoadingTags || tags.length === 0}
-                    class="rounded-lg bg-[#231161] px-4 py-2 text-sm font-medium text-white shadow-md transition-colors hover:bg-[#1a0d4a] disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    >
-                    {isLoadingTags ? 'Loading Courses...' : 'Create New Post'}
-                </button>
-            </div>
-            
-        </div>
-
-        <!--Available tutor sessions col-->
-        <div class="w-full p-4 md:w-7/12">
-            <h2 class="text-center mb-4 text-4xl underline">Available Tutoring Sessions</h2>
-            <!--session card(s)-->
-            {#each sessions as session (session.sId)}
-                    
-                <div class="mx-auto flex flex-col mb-4 rounded-2xl bg-white p-4 drop-shadow-lg md:flex-row">
-                    <div class="w-full md:w-9/12">
-                        <span class="bg-[#231161] text-white text-sm px-2 py-1 rounded shadow-md">{session.course}</span>
-                        <p class="text-lg">Date: {session.date} </p>
-                        <p class="text-lg">Time: {session.timeStart} to {session.timeEnd}</p>
-                        <p class="text-lg">Location: {session.location}</p>
-                    </div>
-                    <div class="flex w-full justify-end items-end md:w-3/12">
-                        <button 
-                            class="bg-[#231161] hover:bg-[#2d1982] text-white py-2 px-3 rounded"
-                            onclick={() => scheduleSession(session.sId)}
-                        > <!--TODO add schdule button function-->
-                            Schedule
+            {#if isTutor}
+                <div class="mb-8 w-full rounded-2xl bg-white p-4 drop-shadow-lg">
+                    <h2 class="mb-4 text-2xl underline text-center">Posts</h2>
+                    <div class="flex justify-center">
+                        <button
+                            onclick={openPostForm}
+                            disabled={isLoadingTags || profile.expertise.length === 0}
+                            class="bg-[#231161] hover:bg-[#2d1982] text-white py-2 px-3 rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
+                            >
+                            {isLoadingTags ? 'Loading Courses...' : 'Create New Post'}
                         </button>
                     </div>
                 </div>
+            {/if}
+
+            <div class="w-full rounded-2xl bg-white p-4 drop-shadow-lg">
+                <h2 class="mb-4 text-2xl underline text-center">Reviews</h2>
+                <div class="flex justify-center">
+                    <button
+                        onclick={openReviewForm}
+                        class="bg-[#231161] hover:bg-[#2d1982] text-white py-2 px-3 rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                        Leave a Review!
+                    </button>
+                    </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Available Tutoring Sessions -->
+        <div class="w-full p-4 md:w-7/12">
+            <h2 class="text-center mb-4 text-4xl underline">Available Tutoring Sessions</h2>
+            {#each tutorSessions as sessions (sessions.aId)}
+                    
+                <div class="mx-auto flex flex-col mb-4 rounded-2xl bg-white p-4 drop-shadow-lg md:flex-row">
+                    <div class="w-full md:w-9/12">
+                        <p class="text-lg">Day: {sessions.day} </p>
+                        <p class="text-lg">Time: {sessions.startTime} to {sessions.endTime}</p>
+                    </div>∂
+                </div>
             {/each}
 
-            <!--Should only show in tutor view!!!!!-->
             {#if isTutor}
-            <div class="flex justify-center">
-                <a href="./{tutorId}/session" class="bg-[#231161] hover:bg-[#2d1982] text-white py-2 px-3 rounded"> 
-                    Add session
-                </a>
-            </div>
-                
+                <div class="flex justify-center mt-4">
+                    <a href="./{tutorId}/session" class="bg-[#231161] hover:bg-[#2d1982] text-white py-2 px-3 rounded"> 
+                        Add session
+                    </a>
+                </div>
             {/if}
         </div>
 
@@ -317,8 +366,8 @@
                         class="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-700 focus:border-[#231161] focus:ring-[#231161]"
                         disabled={isLoadingTags || isSubmitting}
                     >
-                        {#each tags as tag}
-                            <option value={tag.id}>{tag.name}</option>
+                        {#each profile.expertise as tags}
+                            <option value={tags.id}>{tags.name}</option>
                         {/each}
                     </select>
                 </div>
@@ -367,3 +416,76 @@
 {/if}
 
 
+{#if showReviewForm}
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
+            <div class="mb-4 flex items-center justify-between border-b pb-3">
+                <h3 class="text-xl font-bold text-gray-800">Leave a Review for {profile.name}</h3>
+            </div>
+
+            <form onsubmit={handleReviewForm} class="space-y-4">
+                <div>
+                    <label for="review-session" class="mb-1 block text-sm font-medium text-gray-700"
+                        >Select Completed Session to Review</label
+                    >
+                    {#if isLoadingReviewableSessions}
+                        <p class="text-sm text-gray-500">Loading your past sessions...</p>
+                    {:else if userReviewableSessions.length === 0}
+                        <p class="text-sm text-red-600">You must complete a session with this tutor before leaving a review.</p>
+                    {:else}
+                        <select
+                            id="review-session"
+                            bind:value={reviewForm.sid}
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-700 focus:border-[#231161] focus:ring-[#231161]"
+                            disabled={isReviewSubmitting}
+                        >
+                            {#each userReviewableSessions as session}
+                                <option value={session.sid}>{formatSession(session)}</option>
+                            {/each}
+                        </select>
+                    {/if}
+                </div>
+
+                <div>
+                    <label for="review-rating" class="mb-1 block text-sm font-medium text-gray-700"
+                        >Rating (1-5 Stars)</label
+                    >
+                    <input
+                        id="review-rating"
+                        type="number"
+                        min="1"
+                        max="5"
+                        bind:value={reviewForm.rating}
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-700 focus:border-[#231161] focus:ring-[#231161]"
+                        disabled={isReviewSubmitting || userReviewableSessions.length === 0}
+                    />
+                </div>
+
+                {#if reviewErrorMessage}
+                    <p class="text-sm text-red-600">{reviewErrorMessage}</p>
+                {/if}
+                {#if reviewSuccessMessage}
+                    <p class="text-sm text-green-600">{reviewSuccessMessage}</p>
+                {/if}
+
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button
+                        type="button"
+                        onclick={closeReviewForm}
+                        disabled={isReviewSubmitting}
+                        class="rounded-lg bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300 disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={isReviewSubmitting || userReviewableSessions.length === 0}
+                        class="rounded-lg bg-[#231161] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#1a0d4a] disabled:opacity-50"
+                    >
+                        {isReviewSubmitting ? 'Submitting...' : 'Submit Review'}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+{/if}

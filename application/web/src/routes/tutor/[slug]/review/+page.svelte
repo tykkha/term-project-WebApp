@@ -1,7 +1,6 @@
 <script lang="ts">
     import { page } from '$app/state';
     import {parseDate} from '@ark-ui/svelte/date-picker';
-	import { error } from 'console';
 
     // time 
     const currDay = new Date();

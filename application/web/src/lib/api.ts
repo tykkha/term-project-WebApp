@@ -510,3 +510,53 @@ export async function createPost(payload: CreatePostPayload): Promise<Post> {
 
     return res.json();
 }
+
+export async function getPosts(tid: number): Promise<Post[]> {
+    const res = await fetch(`${API_BASE}/tutors/${tid}/posts`);
+
+    if (!res.ok) {
+        // Log the error and return an empty array or throw an error
+        console.error(`Failed to fetch posts for tutor ${tid}`);
+        return [];
+    }
+
+    return res.json();
+}
+
+/* ---------- REVIEWS ---------- */
+
+export interface Review {
+    rid: number;
+	tid: number;
+    uid: number;
+	sid: number; 
+    rating: number;
+}
+
+export interface CreateReviewPayload {
+	tid: number;
+    uid: number;
+    sid: number;
+    rating: number; 
+}
+
+export async function createReview(payload: CreateReviewPayload): Promise<Review> {
+    const res = await authFetch(`${API_BASE}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+        let errMsg = 'Failed to submit review';
+        try {
+            const err = await res.json();
+            if (err?.detail) errMsg = err.detail;
+        } catch {
+            /* ignore */
+        }
+        throw new Error(errMsg);
+    }
+
+    return res.json();
+}
