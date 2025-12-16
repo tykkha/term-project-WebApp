@@ -6,14 +6,20 @@ from db.Messages import GatorGuidesMessages
 from db.Auth import GatorGuidesAuth
 import logging
 import json
+import time
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+rate_limit_store: Dict[int, List[float]] = defaultdict(list)
+RATE_LIMIT_MESSAGES = 100
+RATE_LIMIT_WINDOW = 60
+
 class SendMessageRequest(BaseModel):
     senderUID: int = Field(..., description="Sender user ID")
     receiverUID: int = Field(..., description="Receiver user ID")
-    content: str = Field(..., min_length=1, description="Message content")
+    content: str = Field(..., min_length=1, max_length=5000, description="Message content")
 
 class ConnectionManager:
     def __init__(self):
@@ -29,8 +35,16 @@ class ConnectionManager:
             del self.active_connections[user_id]
             logger.info(f"User {user_id} disconnected")
 
-    async def send_personal_message(self, message: Dict[str, Any], user_id: int):
+    async def send_personal_message(self, message: Dict[str, Any], user_id: int, messages_mgr: GatorGuidesMessages) -> bool:
         if user_id in self.active_connections:
+            sender_uid = message.get('senderUID')
+            receiver_uid = message.get('receiverUID')
+            
+            if sender_uid and receiver_uid:
+                if not messages_mgr.can_message(sender_uid, receiver_uid):
+                    logger.warning(f"Blocked WebSocket message delivery: {sender_uid} -> {receiver_uid} (no session)")
+                    return False
+            
             try:
                 await self.active_connections[user_id].send_json(message)
                 logger.info(f"Sent message to user {user_id}")
@@ -60,6 +74,21 @@ async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGui
         raise HTTPException(status_code=401, detail="Invalid or expired session")
     
     return uid
+
+def check_rate_limit(user_id: int) -> bool:
+    current_time = time.time()
+    
+    rate_limit_store[user_id] = [
+        ts for ts in rate_limit_store[user_id] 
+        if current_time - ts < RATE_LIMIT_WINDOW
+    ]
+    
+    # Check if limit exceeded
+    if len(rate_limit_store[user_id]) >= RATE_LIMIT_MESSAGES:
+        return False
+    
+    rate_limit_store[user_id].append(current_time)
+    return True
 
 # Check if session has been scheduled between tutor and user
 @router.get("/messages/can-message/{uid1}/{uid2}")
@@ -92,6 +121,12 @@ async def send_message(request: SendMessageRequest, current_user: int = Depends(
                 detail="You can only send messages as yourself"
             )
         
+        if not check_rate_limit(current_user):
+            raise HTTPException(
+                status_code=429,
+                detail=f"Rate limit exceeded. Maximum {RATE_LIMIT_MESSAGES} messages per {RATE_LIMIT_WINDOW} seconds."
+            )
+        
         # Check if messaging is allowed
         if not messages_mgr.can_message(request.senderUID, request.receiverUID):
             raise HTTPException(
@@ -109,7 +144,7 @@ async def send_message(request: SendMessageRequest, current_user: int = Depends(
             raise HTTPException(status_code=400, detail="Failed to send message")
         
         # If receiver is online, send via WebSocket
-        await manager.send_personal_message(message, request.receiverUID)
+        await manager.send_personal_message(message, request.receiverUID, messages_mgr)
         
         logger.info(f"Message sent from {request.senderUID} to {request.receiverUID}")
         return message

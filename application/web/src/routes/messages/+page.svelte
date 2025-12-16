@@ -21,6 +21,12 @@
 	let error = '';
 	let messagesContainer: HTMLDivElement;
 	let keepaliveInterval: number | null = null;
+	let reconnectAttempts = 0;
+	let maxReconnectAttempts = 5;
+	let reconnectTimeout: number | null = null;
+	let hasMoreMessages = true;
+	let loadingMoreMessages = false;
+	const MESSAGES_PER_PAGE = 30;
 
 	onMount(async () => {
 		if (!currentUser) {
@@ -48,6 +54,11 @@
 			clearInterval(keepaliveInterval);
 		}
 		
+		// Clear reconnect timeout
+		if (reconnectTimeout) {
+			clearTimeout(reconnectTimeout);
+		}
+		
 		// Close WebSocket when page is closed/navigated away
 		closeWebSocket();
 	});
@@ -71,18 +82,60 @@
 		selectedConversation = conv;
 		messages = [];
 		error = '';
+		hasMoreMessages = true;
 
+		await loadMessages(0);
+	}
+	
+	async function loadMessages(offset: number = 0) {
+		if (!currentUser || !selectedConversation) return;
+		
 		try {
-			loading = true;
-			// Load last 30 messages
-			messages = await getConversation(currentUser.uid, conv.otherUID, 30);
+			if (offset === 0) {
+				loading = true;
+			} else {
+				loadingMoreMessages = true;
+			}
 			
-			// Scroll to bottom after messages load
-			setTimeout(scrollToBottom, 100);
+			const newMessages = await getConversation(
+				currentUser.uid, 
+				selectedConversation.otherUID, 
+				MESSAGES_PER_PAGE, 
+				offset
+			);
+			
+			if (offset === 0) {
+				messages = newMessages;
+				// Scroll to bottom for initial load
+				setTimeout(scrollToBottom, 100);
+			} else {
+				// Prepend older messages
+				const previousScrollHeight = messagesContainer.scrollHeight;
+				messages = [...newMessages, ...messages];
+				
+				// Maintain scroll position
+				setTimeout(() => {
+					const newScrollHeight = messagesContainer.scrollHeight;
+					messagesContainer.scrollTop = newScrollHeight - previousScrollHeight;
+				}, 50);
+			}
+			
+			// Check if there are more messages
+			hasMoreMessages = newMessages.length === MESSAGES_PER_PAGE;
+			
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load conversation';
 		} finally {
 			loading = false;
+			loadingMoreMessages = false;
+		}
+	}
+	
+	function handleScroll() {
+		if (!messagesContainer || loadingMoreMessages || !hasMoreMessages) return;
+		
+		if (messagesContainer.scrollTop < 50) {
+			loadMessages(messages.length);
 		}
 	}
 
@@ -98,7 +151,7 @@
 
 		try {
 			console.log('Attempting WebSocket connection for user:', currentUser.uid);
-			console.log('Session ID:', sessionID);
+			console.log('Reconnect attempt:', reconnectAttempts);
 			
 			ws = createWebSocket(currentUser.uid, sessionID);
 			
@@ -106,7 +159,8 @@
 
 			ws.onopen = () => {
 				console.log('✅ WebSocket connected successfully');
-				error = ''; // Clear any connection errors
+				error = '';
+				reconnectAttempts = 0; // Reset on successful connection
 			};
 
 			ws.onmessage = (event) => {
@@ -143,20 +197,27 @@
 				console.error('❌ WebSocket error:', event);
 				console.error('WebSocket readyState:', ws?.readyState);
 				console.error('Error type:', event.type);
-				error = 'Connection error - check console for details';
+				error = 'Connection error - will attempt to reconnect';
 			};
 
 			ws.onclose = (event) => {
 				console.log('WebSocket closed - Code:', event.code, 'Reason:', event.reason, 'Clean:', event.wasClean);
 				ws = null;
 				
-				// Attempt to reconnect after 3 seconds if not intentionally closed
-				if (event.code !== 1000 && currentUser) {
-					console.log('Will attempt to reconnect in 3 seconds...');
-					setTimeout(() => {
+				// Attempt to reconnect with exponential backoff
+				if (event.code !== 1000 && currentUser && reconnectAttempts < maxReconnectAttempts) {
+					reconnectAttempts++;
+					const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 16000);
+					
+					console.log(`Will attempt to reconnect in ${delay}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})`);
+					
+					reconnectTimeout = setTimeout(() => {
 						console.log('Attempting to reconnect WebSocket...');
 						connectWebSocket();
-					}, 3000);
+					}, delay);
+				} else if (reconnectAttempts >= maxReconnectAttempts) {
+					error = 'Failed to connect after multiple attempts. Please refresh the page.';
+					console.error('Max reconnection attempts reached');
 				}
 			};
 		} catch (e) {
@@ -166,16 +227,24 @@
 	}
 
 	function closeWebSocket() {
+		if (reconnectTimeout) {
+			clearTimeout(reconnectTimeout);
+			reconnectTimeout = null;
+		}
+		
 		if (ws) {
 			ws.close(1000, 'User navigated away'); // Normal closure
 			ws = null;
 		}
+		
+		reconnectAttempts = 0;
 	}
 
 	function closeConversation() {
 		selectedConversation = null;
 		messages = [];
 		error = '';
+		hasMoreMessages = true;
 		// Keep WebSocket connected
 	}
 
@@ -196,8 +265,16 @@
 			messages = [...messages, message];
 			setTimeout(scrollToBottom, 50);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to send message';
+			const errorMsg = e instanceof Error ? e.message : 'Failed to send message';
+			error = errorMsg;
 			messageInput = content; // Restore message on error
+			
+			// Clear error after 5 seconds
+			setTimeout(() => {
+				if (error === errorMsg) {
+					error = '';
+				}
+			}, 5000);
 		}
 	}
 
@@ -242,6 +319,8 @@
 			<h2>Messages</h2>
 			{#if ws}
 				<span class="connection-status connected" title="Connected">●</span>
+			{:else if reconnectAttempts > 0}
+				<span class="connection-status reconnecting" title="Reconnecting...">●</span>
 			{:else}
 				<span class="connection-status disconnected" title="Disconnected">●</span>
 			{/if}
@@ -297,7 +376,11 @@
 			</div>
 
 			<!-- Messages Area -->
-			<div class="messages-container" bind:this={messagesContainer}>
+			<div class="messages-container" bind:this={messagesContainer} on:scroll={handleScroll}>
+				{#if loadingMoreMessages}
+					<div class="loading-more">Loading more messages...</div>
+				{/if}
+				
 				{#if loading && messages.length === 0}
 					<div class="loading-messages">Loading messages...</div>
 				{:else if messages.length === 0}
@@ -389,6 +472,16 @@
 
 	.connection-status.disconnected {
 		color: #f44336;
+	}
+	
+	.connection-status.reconnecting {
+		color: #ff9800;
+		animation: pulse 1.5s ease-in-out infinite;
+	}
+	
+	@keyframes pulse {
+		0%, 100% { opacity: 1; }
+		50% { opacity: 0.5; }
 	}
 
 	.conversations-list {
@@ -655,6 +748,13 @@
 		text-align: center;
 		padding: 40px;
 		color: #999;
+	}
+	
+	.loading-more {
+		text-align: center;
+		padding: 10px;
+		color: #999;
+		font-size: 14px;
 	}
 
 	.error-banner {
