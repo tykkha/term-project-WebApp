@@ -57,7 +57,7 @@ class GatorGuidesMessages:
             message_id = cursor.lastrowid
             
             conn.commit()
-            
+
             # Get the created message with sender info
             select_query = """
                 SELECT 
@@ -111,7 +111,7 @@ class GatorGuidesMessages:
                     (m.senderUID = %s AND m.receiverUID = %s)
                     OR 
                     (m.senderUID = %s AND m.receiverUID = %s)
-                ORDER BY m.timestamp ASC
+                ORDER BY m.timestamp DESC
                 LIMIT %s OFFSET %s
             """
             
@@ -130,7 +130,7 @@ class GatorGuidesMessages:
                     'timestamp': msg['timestamp'].isoformat() if isinstance(msg['timestamp'], datetime) else str(msg['timestamp'])
                 })
             
-            return results
+            return list(reversed(results))
 
         except Exception as e:
             logger.error(f"Get conversation error: {e}", exc_info=True)

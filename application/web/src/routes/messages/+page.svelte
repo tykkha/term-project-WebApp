@@ -20,13 +20,14 @@
 	let loading = false;
 	let error = '';
 	let messagesContainer: HTMLDivElement;
-	let keepaliveInterval: number | null = null;
+	let keepaliveInterval: ReturnType<typeof setInterval> | null = null;
 	let reconnectAttempts = 0;
 	let maxReconnectAttempts = 5;
-	let reconnectTimeout: number | null = null;
+	let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 	let hasMoreMessages = true;
 	let loadingMoreMessages = false;
-	const MESSAGES_PER_PAGE = 30;
+	let isAdjustingScroll = false;
+	const MESSAGES_PER_PAGE = 100;
 
 	onMount(async () => {
 		if (!currentUser) {
@@ -68,7 +69,7 @@
 		try {
 			loading = true;
 			error = '';
-			conversations = await getRecentConversations(currentUser.uid, 10);
+			conversations = await getRecentConversations(currentUser.uid, 20);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load conversations';
 		} finally {
@@ -109,15 +110,35 @@
 				// Scroll to bottom for initial load
 				setTimeout(scrollToBottom, 100);
 			} else {
-				// Prepend older messages
-				const previousScrollHeight = messagesContainer.scrollHeight;
-				messages = [...newMessages, ...messages];
+				// Prevent visual flash during scroll adjustment
+				isAdjustingScroll = true;
 				
-				// Maintain scroll position
-				setTimeout(() => {
-					const newScrollHeight = messagesContainer.scrollHeight;
-					messagesContainer.scrollTop = newScrollHeight - previousScrollHeight;
-				}, 50);
+				// Find the first visible message element as an anchor
+				const firstVisibleMessage = messages[0];
+				const anchorElement = messagesContainer.querySelector(`[data-mid="${firstVisibleMessage?.mid}"]`) as HTMLElement;
+				const anchorOffsetTop = anchorElement ? anchorElement.offsetTop : 0;
+				
+				// Deduplicate: only add messages that don't already exist
+				const existingMids = new Set(messages.map(m => m.mid));
+				const uniqueNewMessages = newMessages.filter(m => !existingMids.has(m.mid));
+				
+				// Update messages array with only unique new messages
+				messages = [...uniqueNewMessages, ...messages];
+				
+				// Wait for DOM to fully render
+				await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+				
+				// Find the same anchor element after new messages are added
+				const newAnchorElement = messagesContainer.querySelector(`[data-mid="${firstVisibleMessage?.mid}"]`) as HTMLElement;
+				
+				if (newAnchorElement) {
+					// Scroll to maintain the exact same visual position of the anchor
+					messagesContainer.scrollTop = newAnchorElement.offsetTop - anchorOffsetTop + messagesContainer.scrollTop;
+				}
+				
+				// Re-enable visibility after scroll adjustment
+				await new Promise(resolve => requestAnimationFrame(resolve));
+				isAdjustingScroll = false;
 			}
 			
 			// Check if there are more messages
@@ -125,6 +146,7 @@
 			
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load conversation';
+			isAdjustingScroll = false;
 		} finally {
 			loading = false;
 			loadingMoreMessages = false;
@@ -134,7 +156,7 @@
 	function handleScroll() {
 		if (!messagesContainer || loadingMoreMessages || !hasMoreMessages) return;
 		
-		if (messagesContainer.scrollTop < 50) {
+		if (messagesContainer.scrollTop < 100) {
 			loadMessages(messages.length);
 		}
 	}
@@ -207,6 +229,7 @@
 				// Attempt to reconnect with exponential backoff
 				if (event.code !== 1000 && currentUser && reconnectAttempts < maxReconnectAttempts) {
 					reconnectAttempts++;
+					// Exponential backoff
 					const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 16000);
 					
 					console.log(`Will attempt to reconnect in ${delay}ms (attempt ${reconnectAttempts}/${maxReconnectAttempts})`);
@@ -376,7 +399,12 @@
 			</div>
 
 			<!-- Messages Area -->
-			<div class="messages-container" bind:this={messagesContainer} on:scroll={handleScroll}>
+			<div 
+				class="messages-container" 
+				class:adjusting={isAdjustingScroll}
+				bind:this={messagesContainer} 
+				on:scroll={handleScroll}
+			>
 				{#if loadingMoreMessages}
 					<div class="loading-more">Loading more messages...</div>
 				{/if}
@@ -389,11 +417,12 @@
 						<p class="hint">Start the conversation!</p>
 					</div>
 				{:else}
-					{#each messages as message}
+					{#each messages as message (message.mid)}
 						<div
 							class="message"
 							class:sent={message.senderUID === currentUser?.uid}
 							class:received={message.senderUID !== currentUser?.uid}
+							data-mid={message.mid}
 						>
 							<div class="message-content">
 								<div class="message-text">{message.content}</div>
@@ -621,6 +650,12 @@
 		flex-direction: column;
 		gap: 12px;
 		background: #fafafa;
+		transition: opacity 0.05s ease;
+	}
+	
+	.messages-container.adjusting {
+		opacity: 0.99;
+		pointer-events: none;
 	}
 
 	.message {
