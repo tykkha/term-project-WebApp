@@ -2,16 +2,20 @@
 	import { goto } from '$app/navigation';
     import { page } from '$app/state';
     import {
+        authFetch, 
         getCurrentUser,
         type User,
         type Tag,
         createPost,
+        getPosts,
+        deletePost,
+        type Post,
         type CreatePostPayload,
         type TutorResponse,
         createReview,
         type CreateReviewPayload,
         getUserSessions, 
-        type Session, 
+        type Session,
     } from '$lib/api';
     import { onMount } from 'svelte';
 
@@ -23,7 +27,7 @@
     let isTutor = $state(false); 
     let uData = $state<User | null>(getCurrentUser());
     let tData = $state<TutorResponse>();
-        
+    
     // Single instance of tutor profile
     interface Profile {
         photo: string;
@@ -53,6 +57,7 @@
         bio: '',
     });
     let tutorSessions = $state([] as AvailableTutorSessions[]);
+    let tutorPosts = $state([] as Post[]); 
     
     //  Post Form  
     let showPostForm = $state(false);
@@ -95,16 +100,18 @@
         // Full profile pull 
         try {
             // Pull tutor profile 
-            const pResponse = await fetch(`/api/tutors/${tutorIdNum}`);
+            const pResponse = await authFetch(`/api/tutors/${tutorIdNum}`);
             const pData = await pResponse.json();
             console.log('Tutor Profile Data:', pData);
             profile = pData as Profile;
 
             // Pull tutor's available sessions
-            const aResponse = await fetch(`/api/tutors/${tutorIdNum}/sessions`);
+            const aResponse = await authFetch(`/api/tutors/${tutorIdNum}/sessions`);
             const aData = await aResponse.json();
             console.log('Tutor Availability Sessions Data:', aData);
             tutorSessions = aData as AvailableTutorSessions[];
+
+            await loadTutorPosts();
         } catch (error) {
             console.error('Search failed:', error);
         }
@@ -141,6 +148,32 @@
         showPostForm = false;
     }
 
+    async function loadTutorPosts() {
+        try {
+            const posts = await getPosts(tutorIdNum);
+            tutorPosts = posts;
+            console.log('Tutor Posts Data:', tutorPosts);
+        } catch (error) {
+            console.error('Failed to load tutor posts:', error);
+        }
+    }
+
+       async function handleDeletePost(pid: number) {
+        if (!confirm('Are you sure you want to delete this post?')) {
+            return;
+        }
+
+        try {
+            await deletePost(pid);
+            // Immediately update the list
+            tutorPosts = tutorPosts.filter(post => post.pid !== pid);
+            alert('Post deleted successfully!');
+        } catch (err) {
+            console.error('Failed to delete post:', err);
+            alert('Failed to delete post. Please try again.');
+        }
+    }
+
     async function handlePostForm() {
         if (!postForm.content.trim() || postForm.tagsID === 0) {
             errorMessage = 'Please select a course and enter content.';
@@ -159,6 +192,7 @@
             };
             await createPost(payload);
 
+            await loadTutorPosts(); 
             successMessage = 'Post created successfully!';
             setTimeout(() => {
                 closePostForm();
@@ -295,56 +329,120 @@
                 <p class="p-3 text-base">{profile.bio}</p>
             </div>
 
-            {#if isTutor}
-                <div class="mb-8 w-full rounded-2xl bg-white p-4 drop-shadow-lg">
-                    <h2 class="mb-4 text-2xl underline text-center">Posts</h2>
-                    <div class="flex justify-center">
-                        <button
-                            onclick={openPostForm}
-                            disabled={isLoadingTags || profile.expertise.length === 0}
-                            class="bg-[#231161] hover:bg-[#2d1982] text-white py-2 px-3 rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
-                            >
-                            {isLoadingTags ? 'Loading Courses...' : 'Create New Post'}
-                        </button>
-                    </div>
-                </div>
-            {/if}
-
-            <div class="w-full rounded-2xl bg-white p-4 drop-shadow-lg">
-                <h2 class="mb-4 text-2xl underline text-center">Reviews</h2>
-                <div class="flex justify-center">
-                    <button
-                        onclick={openReviewForm}
-                        class="bg-[#231161] hover:bg-[#2d1982] text-white py-2 px-3 rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    >
-                        Leave a Review!
-                    </button>
-                    </div>
+            <div class="flex justify-center">
+                <button
+                    onclick={openReviewForm}
+                    class="bg-[#231161] hover:bg-[#2d1982] text-white py-2 px-3 rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                    Leave a Review!
+                </button>
             </div>
         </div>
 
         <!-- Right Column: Available Tutoring Sessions -->
         <div class="w-full p-4 md:w-7/12">
-            <h2 class="text-center mb-4 text-4xl underline">Available Tutoring Sessions</h2>
-            {#each tutorSessions as sessions (sessions.aId)}
-                    
-                <div class="mx-auto flex flex-col mb-4 rounded-2xl bg-white p-4 drop-shadow-lg md:flex-row">
-                    <div class="w-full md:w-9/12">
-                        <p class="text-lg">Day: {sessions.day} </p>
-                        <p class="text-lg">Time: {sessions.startTime} to {sessions.endTime}</p>
-                    </div>∂
-                </div>
-            {/each}
+            <div class="mb-8 w-full rounded-2xl bg-white p-4 drop-shadow-lg">
+                <h2 class="text-center mb-4 text-4xl underline">Available Tutoring Sessions</h2>
 
-            {#if isTutor}
-                <div class="flex justify-center mt-4">
-                    <a href="./{tutorId}/session" class="bg-[#231161] hover:bg-[#2d1982] text-white py-2 px-3 rounded"> 
-                        Add session
-                    </a>
+                <!--Available Tutoring Sessions-->
+                {#if tutorSessions.length === 0}
+                    <p class="text-center text-gray-500 italic">
+                        This tutor has no available sessions at the moment.
+                    </p>
+                {:else}
+                    <div class="space-y-4">
+                        {#each tutorSessions as session (session.aId)}
+                            <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-md">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-gray-800">
+                                            {new Date(session.day).toLocaleDateString()}
+                                        </h3>
+                                        <p class="text-gray-600">
+                                            Time: {session.startTime}:00 - {session.endTime}:00
+                                        </p>
+                                    </div>
+                                    <div>
+                                        {#if session.isActive}
+                                            <span class="text-sm px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                                                Active
+                                            </span>
+                                        {:else}
+                                            <span class="text-sm px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">
+                                                Inactive
+                                            </span>
+                                        {/if}
+                                    </div>
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                {/if}
+
+                {#if isTutor}
+                    <div class="flex justify-center mt-4">
+                        <a href="./{tutorId}/session" class="bg-[#231161] hover:bg-[#2d1982] text-white py-2 px-3 rounded"> 
+                            Add session
+                        </a>
+                    </div>
+                {/if}
+            </div>
+            <div>
+                <div class="mb-8 w-full rounded-2xl bg-white p-4 drop-shadow-lg">
+                    <h2 class="text-center mb-4 text-4xl underline">Tutor Posts</h2>
+                    <div class="space-y-4">
+                        {#if tutorPosts.length === 0}
+                            <p class="text-center text-gray-500 italic">
+                                This tutor has not created any posts yet.
+                            </p>
+                        {:else}
+                            {#each tutorPosts as post (post.pid)}
+                                <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-md">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="text-sm px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 font-medium">
+                                            {profile.expertise.find(t => t.id === post.tagsID)?.name || 'General'}
+                                        </span>
+                                        
+                                        {#if post.timestamp}
+                                            <span class="text-xs text-gray-500">
+                                                Posted: {new Date(post.timestamp).toLocaleDateString()}
+                                            </span>
+                                        {/if}
+                                    </div>
+
+                                    <p class="text-gray-800 whitespace-pre-wrap">
+                                        {post.content}
+                                    </p>
+
+                                    {#if isTutor}
+                                        <div class="mt-3 flex justify-end">
+                                            <button
+                                                onclick={() => handleDeletePost(post.pid)}
+                                                class="text-xs text-red-600 hover:text-red-800 transition-colors"
+                                            >
+                                                Delete Post
+                                            </button>
+                                        </div>
+                                    {/if}
+                                </div>
+                            {/each}
+                        {/if}
+
+                        {#if isTutor}
+                            <div class="flex justify-center mb-4">
+                                <button
+                                    onclick={openPostForm}
+                                    disabled={isLoadingTags || profile.expertise.length === 0}
+                                    class="bg-[#231161] hover:bg-[#2d1982] text-white py-2 px-3 rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                >
+                                    {isLoadingTags ? 'Loading Courses...' : 'Create New Post'}
+                                </button>
+                            </div>
+                        {/if}
+                    </div>
                 </div>
-            {/if}
+            </div>
         </div>
-
     </div>
 </div>
 

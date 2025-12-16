@@ -523,6 +523,25 @@ export async function getPosts(tid: number): Promise<Post[]> {
     return res.json();
 }
 
+export async function deletePost(pid: number): Promise<{ message: string; pid: number }> {
+    const res = await authFetch(`${API_BASE}/posts/${pid}`, {
+        method: 'DELETE'
+    });
+
+    if (!res.ok) {
+        let errMsg = 'Failed to delete post';
+        try {
+            const err = await res.json();
+            if (err?.detail) errMsg = err.detail;
+        } catch {
+            /* ignore */
+        }
+        throw new Error(errMsg);
+    }
+
+    return res.json();
+}
+
 /* ---------- REVIEWS ---------- */
 
 export interface Review {
