@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 from dependencies import get_auth_manager, get_session_manager, get_messages_manager
 from db.Sessions import GatorGuidesSessions
 from db.Auth import GatorGuidesAuth
@@ -10,12 +10,16 @@ import logging
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+# Valid location options matching the database ENUM
+LocationType = Literal['Library', 'Zoom', 'César Chávez Student Center']
+
 class CreateSessionRequest(BaseModel):
     uid: int = Field(..., description="User ID (student)")
     tid: int = Field(..., description="Tutor ID")
     tagsID: int = Field(..., description="Tag ID (course)")
     day: str = Field(..., description="Day of week (Monday-Sunday)")
     time: int = Field(..., ge=0, le=23, description="Hour in military time (0-23)")
+    location: LocationType = Field(default='Zoom', description="Session location")
 
 async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGuidesAuth = Depends(get_auth_manager)) -> int:
     if not authorization:
@@ -52,7 +56,8 @@ async def create_session(
             tid=request.tid,
             tags_id=request.tagsID,
             day=request.day,
-            time=request.time
+            time=request.time,
+            location=request.location
         )
         
         if not session:

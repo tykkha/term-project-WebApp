@@ -12,18 +12,18 @@ class GatorGuidesSessions:
     def _get_connection(self):
         return self.pool.get_connection()
     
-    def create_session(self, uid: int, tid: int, tags_id: int, day: str, time: int) -> Optional[Dict[str, Any]]:
+    def create_session(self, uid: int, tid: int, tags_id: int, day: str, time: int, location: str = 'Zoom') -> Optional[Dict[str, Any]]:
         conn = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
             
             query = """
-                INSERT INTO Sessions (uid, tid, tagsID, day, time)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO Sessions (uid, tid, tagsID, day, time, location)
+                VALUES (%s, %s, %s, %s, %s, %s)
             """
             
-            cursor.execute(query, (uid, tid, tags_id, day, time))
+            cursor.execute(query, (uid, tid, tags_id, day, time, location))
             session_id = cursor.lastrowid
             
             # Fetch the created session

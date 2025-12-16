@@ -222,6 +222,14 @@ export async function getTags(): Promise<Tag[]> {
 
 /* ---------- SESSIONS ---------- */
 
+export type SessionLocation = 'Library' | 'Zoom' | 'César Chávez Student Center';
+
+export const SESSION_LOCATIONS: SessionLocation[] = [
+	'Zoom',
+	'Library',
+	'César Chávez Student Center'
+];
+
 export interface Session {
 	sid: number;
 	student: { uid: number; name: string };
@@ -229,6 +237,7 @@ export interface Session {
 	course: string;
 	day: string;
 	time: number;
+	location: SessionLocation;
 	started: string | null;
 	concluded: string | null;
 }
@@ -239,6 +248,7 @@ export interface CreateSessionPayload {
 	tagsID: number;
 	day: string;
 	time: number;
+	location: SessionLocation;
 }
 
 export async function createSession(payload: CreateSessionPayload): Promise<Session> {
@@ -474,110 +484,110 @@ export async function getAvailableTimesForDay(tid: number, day: string): Promise
 /* ---------- POSTS ---------- */
 
 export interface Post {
-    pid: number;
-    tid: number;
-    tagsID: number;
-    content: string;
-    timestamp?: string; 
+	pid: number;
+	tid: number;
+	tagsID: number;
+	content: string;
+	timestamp?: string;
 }
 
 export interface CreatePostPayload {
-    tid: number;
-    tagsID: number;
-    content: string;
+	tid: number;
+	tagsID: number;
+	content: string;
 }
 
 // Creates a new post for a tutor profile
 export async function createPost(payload: CreatePostPayload): Promise<Post> {
-    const res = await authFetch(`${API_BASE}/posts`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-    });
+	const res = await authFetch(`${API_BASE}/posts`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(payload)
+	});
 
-    if (!res.ok) {
-        let errMsg = 'Failed to create post';
-        try {
-            const err = await res.json();
-            if (err?.detail) errMsg = err.detail;
-        } catch {
-            /* ignore */
-        }
-        throw new Error(errMsg);
-    }
+	if (!res.ok) {
+		let errMsg = 'Failed to create post';
+		try {
+			const err = await res.json();
+			if (err?.detail) errMsg = err.detail;
+		} catch {
+			/* ignore */
+		}
+		throw new Error(errMsg);
+	}
 
-    return res.json();
+	return res.json();
 }
 
 export async function getPosts(tid: number): Promise<Post[]> {
-    const res = await fetch(`${API_BASE}/tutors/${tid}/posts`);
+	const res = await fetch(`${API_BASE}/tutors/${tid}/posts`);
 
-    if (!res.ok) {
-        // Log the error and return an empty array or throw an error
-        console.error(`Failed to fetch posts for tutor ${tid}`);
-        return [];
-    }
+	if (!res.ok) {
+		// Log the error and return an empty array or throw an error
+		console.error(`Failed to fetch posts for tutor ${tid}`);
+		return [];
+	}
 
-    return res.json();
+	return res.json();
 }
 
 export async function deletePost(pid: number): Promise<{ message: string; pid: number }> {
-    const res = await authFetch(`${API_BASE}/posts/${pid}`, {
-        method: 'DELETE'
-    });
+	const res = await authFetch(`${API_BASE}/posts/${pid}`, {
+		method: 'DELETE'
+	});
 
-    if (!res.ok) {
-        let errMsg = 'Failed to delete post';
-        try {
-            const err = await res.json();
-            if (err?.detail) errMsg = err.detail;
-        } catch {
-            /* ignore */
-        }
-        throw new Error(errMsg);
-    }
+	if (!res.ok) {
+		let errMsg = 'Failed to delete post';
+		try {
+			const err = await res.json();
+			if (err?.detail) errMsg = err.detail;
+		} catch {
+			/* ignore */
+		}
+		throw new Error(errMsg);
+	}
 
-    return res.json();
+	return res.json();
 }
 
 /* ---------- REVIEWS ---------- */
 
 export interface Review {
-    rid: number;
+	rid: number;
 	tid: number;
-    uid: number;
-	sid: number; 
-    rating: number;
+	uid: number;
+	sid: number;
+	rating: number;
 }
 
 export interface CreateReviewPayload {
 	tid: number;
-    uid: number;
-    sid: number;
-    rating: number; 
+	uid: number;
+	sid: number;
+	rating: number;
 }
 
 export async function createReview(payload: CreateReviewPayload): Promise<Review> {
-    const res = await authFetch(`${API_BASE}/reviews`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
+	const res = await authFetch(`${API_BASE}/reviews`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(payload)
+	});
 
-    if (!res.ok) {
-        let errMsg = 'Failed to submit review';
-        try {
-            const err = await res.json();
-            if (err?.detail) errMsg = err.detail;
-        } catch {
-            /* ignore */
-        }
-        throw new Error(errMsg);
-    }
+	if (!res.ok) {
+		let errMsg = 'Failed to submit review';
+		try {
+			const err = await res.json();
+			if (err?.detail) errMsg = err.detail;
+		} catch {
+			/* ignore */
+		}
+		throw new Error(errMsg);
+	}
 
-    return res.json();
+	return res.json();
 }
 
 /* ---------- MESSAGES ---------- */
@@ -653,7 +663,10 @@ export async function getConversation(
 }
 
 // Get recent conversations for a user
-export async function getRecentConversations(uid: number, limit: number = 20): Promise<Conversation[]> {
+export async function getRecentConversations(
+	uid: number,
+	limit: number = 20
+): Promise<Conversation[]> {
 	const res = await authFetch(`${API_BASE}/users/${uid}/conversations?limit=${limit}`);
 	if (!res.ok) {
 		throw new Error('Failed to load conversations');
@@ -663,8 +676,9 @@ export async function getRecentConversations(uid: number, limit: number = 20): P
 
 // WebSocket connection helper
 export function createWebSocket(userId: number, token: string): WebSocket {
-	const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-	
+	const isDevelopment =
+		window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
 	let wsUrl: string;
 	if (isDevelopment) {
 		const backendPort = '8001';
@@ -674,7 +688,7 @@ export function createWebSocket(userId: number, token: string): WebSocket {
 		const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 		wsUrl = `${protocol}//${window.location.host}/api/ws/${userId}?token=${token}`;
 	}
-	
+
 	console.log('Connecting to WebSocket:', wsUrl);
 	return new WebSocket(wsUrl);
 }

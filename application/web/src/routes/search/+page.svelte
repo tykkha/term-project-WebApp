@@ -21,7 +21,9 @@
 		createSession,
 		type SearchResult,
 		type User as UserType,
-		type Tag
+		type Tag,
+		type SessionLocation,
+		SESSION_LOCATIONS
 	} from '$lib/api';
 
 	interface Tutor {
@@ -58,6 +60,7 @@
 	let bookingDay = $state('Monday');
 	let bookingTime = $state(9);
 	let bookingCourse = $state<number | null>(null);
+	let bookingLocation = $state<SessionLocation>('Zoom');
 	let isBooking = $state(false);
 	let bookingError = $state('');
 	let bookingSuccess = $state('');
@@ -162,6 +165,7 @@
 		bookingDay = 'Monday';
 		bookingTime = 9;
 		bookingCourse = null;
+		bookingLocation = 'Zoom';
 		bookingError = '';
 		bookingSuccess = '';
 		loadAvailability(tutor.tid, 'Monday');
@@ -169,6 +173,10 @@
 
 	function closeBooking() {
 		bookingTutorId = null;
+		bookingDay = 'Monday';
+		bookingTime = 9;
+		bookingCourse = null;
+		bookingLocation = 'Zoom';
 		bookingError = '';
 		bookingSuccess = '';
 	}
@@ -181,13 +189,11 @@
 	}
 
 	async function confirmBooking() {
-		if (!user || !bookingTutorId || !bookingCourse) {
-			bookingError = 'Please select a course';
-			return;
-		}
+		if (!user || !bookingTutorId || !bookingCourse) return;
 
 		isBooking = true;
 		bookingError = '';
+		bookingSuccess = '';
 
 		try {
 			await createSession({
@@ -195,12 +201,13 @@
 				tid: bookingTutorId,
 				tagsID: bookingCourse,
 				day: bookingDay,
-				time: bookingTime
+				time: bookingTime,
+				location: bookingLocation
 			});
 
-			bookingSuccess = 'Session booked successfully!';
+			bookingSuccess = 'Session booked successfully! Redirecting to dashboard...';
 			setTimeout(() => {
-				closeBooking();
+				goto('/student-dashboard');
 			}, 2000);
 		} catch (err: any) {
 			bookingError = err?.message || 'Failed to book session';
@@ -562,6 +569,19 @@
 								<p class="mt-1 text-sm text-red-600">No available times for this day</p>
 							{/if}
 						{/if}
+					</div>
+
+					<!-- Location Selection -->
+					<div>
+						<label class="mb-1 block text-sm font-medium text-gray-700">Select Location</label>
+						<select
+							bind:value={bookingLocation}
+							class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-[#231161] focus:outline-none"
+						>
+							{#each SESSION_LOCATIONS as loc}
+								<option value={loc}>{loc}</option>
+							{/each}
+						</select>
 					</div>
 
 					<!-- Error/Success Messages -->

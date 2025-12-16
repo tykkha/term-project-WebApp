@@ -10,7 +10,9 @@
 		updateUser,
 		uploadProfilePicture,
 		type User,
-		type Session
+		type Session,
+		type SessionLocation,
+		SESSION_LOCATIONS
 	} from '$lib/api';
 	import ImageUpload from '$lib/components/ImageUpload.svelte';
 
@@ -65,12 +67,13 @@
 			selectedCourse: number | null;
 			selectedDay: string;
 			selectedTime: number;
+			selectedLocation: SessionLocation;
 			isSubmitting: boolean;
 			error: string;
 			success: string;
 		};
 	}>({});
-    let sessionActionLoading = $state<{ [key: number]: boolean }>({});
+	let sessionActionLoading = $state<{ [key: number]: boolean }>({});
 
 	// ---- HELPERS ----
 	async function handleLogout() {
@@ -94,6 +97,7 @@
 			selectedCourse: null,
 			selectedDay: 'Monday',
 			selectedTime: 14,
+			selectedLocation: 'Zoom',
 			isSubmitting: false,
 			error: '',
 			success: ''
@@ -133,7 +137,8 @@
 				tid: tutorId,
 				tagsID: state.selectedCourse,
 				day: state.selectedDay,
-				time: state.selectedTime
+				time: state.selectedTime,
+				location: state.selectedLocation
 			});
 
 			state.success = 'Session booked successfully!';
@@ -196,60 +201,55 @@
 			tutorCoursesLoading[tid] = false;
 		}
 	}
-    async function startSession(sid: number) {
-        sessionActionLoading[sid] = true;
-        try {
-            await authFetch(`/api/sessions/${sid}/start`, { method: 'PUT' });
-            await loadSessions();
-        } catch (err) {
-            alert('Failed to start');
-        } finally {
-            sessionActionLoading[sid] = false;
-        }
-    }
+	async function startSession(sid: number) {
+		sessionActionLoading[sid] = true;
+		try {
+			await authFetch(`/api/sessions/${sid}/start`, { method: 'PUT' });
+			await loadSessions();
+		} catch (err) {
+			alert('Failed to start');
+		} finally {
+			sessionActionLoading[sid] = false;
+		}
+	}
 
-    async function endSession(sid: number) {
-        sessionActionLoading[sid] = true;
-        try {
-            await authFetch(`/api/sessions/${sid}/end`, { method: 'PUT' });
-            await loadSessions();
-        } catch (err) {
-            alert('Failed to end');
-        } finally {
-            sessionActionLoading[sid] = false;
-        }
-    }
+	async function endSession(sid: number) {
+		sessionActionLoading[sid] = true;
+		try {
+			await authFetch(`/api/sessions/${sid}/end`, { method: 'PUT' });
+			await loadSessions();
+		} catch (err) {
+			alert('Failed to end');
+		} finally {
+			sessionActionLoading[sid] = false;
+		}
+	}
 
-    async function loadSessions() {
-        if (!user) return;
+	async function loadSessions() {
+		if (!user) return;
 
-        try {
-            const sessionsRes = await authFetch(`/api/users/${user.uid}/sessions`);
-            if (sessionsRes.ok) {
-                const allSessions = await sessionsRes.json();
-                const now = new Date();
+		try {
+			const sessionsRes = await authFetch(`/api/users/${user.uid}/sessions`);
+			if (sessionsRes.ok) {
+				const allSessions = await sessionsRes.json();
+				const now = new Date();
 
-                // Grab rated session IDs from localStorage
-                const rated: number[] = JSON.parse(localStorage.getItem('ratedSessions') || '[]');
+				// Grab rated session IDs from localStorage
+				const rated: number[] = JSON.parse(localStorage.getItem('ratedSessions') || '[]');
 
-                // Split upcoming vs past
-                upcomingSessions = allSessions.filter(
-                    (s: Session) => !s.concluded || new Date(s.concluded) > now
-                );
+				// Split upcoming vs past
+				upcomingSessions = allSessions.filter(
+					(s: Session) => !s.concluded || new Date(s.concluded) > now
+				);
 
-                pastSessions = allSessions
-                    .filter((s: Session) => s.concluded && new Date(s.concluded) <= now)
-                    .map((s: any) =>
-                        rated.includes(s.sid)
-                            ? { ...s, hasRated: true }
-                            : s
-                    );
-            }
-        } catch (err) {
-            console.error('Failed to load sessions:', err);
-        }
-    }
-
+				pastSessions = allSessions
+					.filter((s: Session) => s.concluded && new Date(s.concluded) <= now)
+					.map((s: any) => (rated.includes(s.sid) ? { ...s, hasRated: true } : s));
+			}
+		} catch (err) {
+			console.error('Failed to load sessions:', err);
+		}
+	}
 
 	function extractPhone(bio: string | null): string {
 		if (!bio) return '';
@@ -349,54 +349,50 @@
 		showReviewModal = true;
 	}
 
-    async function submitReview() {
-        if (!reviewSession) return;
+	async function submitReview() {
+		if (!reviewSession) return;
 
-        isReviewSubmitting = true;
+		isReviewSubmitting = true;
 
-        try {
-            const sid = (reviewSession as any).sid;
+		try {
+			const sid = (reviewSession as any).sid;
 
-            const res = await authFetch(`/api/tutors/ratings`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    tid: reviewSession.tutor.tid,
-                    sid,
-                    rating: reviewForm.rating
-                })
-            });
+			const res = await authFetch(`/api/tutors/ratings`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					tid: reviewSession.tutor.tid,
+					sid,
+					rating: reviewForm.rating
+				})
+			});
 
-            const body = await res.json().catch(() => null);
+			const body = await res.json().catch(() => null);
 
-            if (!res.ok) {
-                alert(body?.detail || 'Failed to submit review. Please try again.');
-                return;
-            }
+			if (!res.ok) {
+				alert(body?.detail || 'Failed to submit review. Please try again.');
+				return;
+			}
 
-            let rated = JSON.parse(localStorage.getItem('ratedSessions') || '[]');
-            if (!rated.includes(sid)) {
-                rated.push(sid);
-                localStorage.setItem('ratedSessions', JSON.stringify(rated));
-            }
+			let rated = JSON.parse(localStorage.getItem('ratedSessions') || '[]');
+			if (!rated.includes(sid)) {
+				rated.push(sid);
+				localStorage.setItem('ratedSessions', JSON.stringify(rated));
+			}
 
-            showReviewModal = false;
-            await loadDashboard();
+			showReviewModal = false;
+			await loadDashboard();
 
-            pastSessions = pastSessions.map((s: any) =>
-                s.sid === sid ? { ...s, hasRated: true } : s
-            );
-        } catch (err: any) {
-            console.error('Review error:', err);
-            alert('Failed to submit review. Please try again.');
-        } finally {
-            isReviewSubmitting = false;
-        }
-    }
+			pastSessions = pastSessions.map((s: any) => (s.sid === sid ? { ...s, hasRated: true } : s));
+		} catch (err: any) {
+			console.error('Review error:', err);
+			alert('Failed to submit review. Please try again.');
+		} finally {
+			isReviewSubmitting = false;
+		}
+	}
 
-
-
-    function formatTime(hour: number): string {
+	function formatTime(hour: number): string {
 		const period = hour >= 12 ? 'PM' : 'AM';
 		const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
 		return `${displayHour}:00 ${period}`;
@@ -579,78 +575,86 @@
 				<section class="rounded-lg bg-white p-6 shadow">
 					<h2 class="mb-4 text-xl font-bold text-gray-800">Upcoming Sessions</h2>
 					<div class="space-y-3">
-                        {#each upcomingSessions as session}
-                            {@const sid = (session as any).sid}
-                            {@const hasStarted = (session as any).started}
-                            {@const hasEnded = (session as any).concluded}
+						{#each upcomingSessions as session}
+							{@const sid = (session as any).sid}
+							{@const hasStarted = (session as any).started}
+							{@const hasEnded = (session as any).concluded}
 
-                            <div class="rounded-lg border border-purple-200 bg-purple-50 p-4">
-                                <div class="mb-2 flex items-center justify-between">
-                                    <div class="flex items-center gap-2">
+							<div class="rounded-lg border border-purple-200 bg-purple-50 p-4">
+								<div class="mb-2 flex items-center justify-between">
+									<div class="flex items-center gap-2">
 										<span class="rounded bg-purple-600 px-2 py-1 text-xs font-semibold text-white"
-                                        >Upcoming</span
-                                        >
-                                        <span class="text-sm font-medium text-gray-700">{session.course}</span>
+											>Upcoming</span
+										>
+										<span class="text-sm font-medium text-gray-700">{session.course}</span>
 
-                                        {#if hasStarted && !hasEnded}
+										{#if hasStarted && !hasEnded}
 											<span class="rounded bg-green-600 px-2 py-1 text-xs font-semibold text-white">
 												In Progress
 											</span>
-                                        {:else if hasEnded}
+										{:else if hasEnded}
 											<span class="rounded bg-gray-500 px-2 py-1 text-xs font-semibold text-white">
 												Ended
 											</span>
-                                        {/if}
-                                    </div>
-                                    <button
-                                            type="button"
-                                            class="rounded bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-700"
-                                            onclick={() => confirmCancelSession(session)}
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                                <div class="grid grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                        <p class="text-gray-600">Tutor</p>
-                                        <p class="font-semibold text-gray-800">
-                                            {session.tutor.name}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p class="text-gray-600">Schedule</p>
-                                        <p class="font-semibold text-gray-800">
-                                            {session.day} at {formatTime(session.time)}
-                                        </p>
-                                    </div>
-                                </div>
+										{/if}
+									</div>
+									<button
+										type="button"
+										class="rounded bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-700"
+										onclick={() => confirmCancelSession(session)}
+									>
+										Cancel
+									</button>
+								</div>
+								<div class="grid grid-cols-2 gap-4 text-sm">
+									<div>
+										<p class="text-gray-600">Tutor</p>
+										<p class="font-semibold text-gray-800">
+											{session.tutor.name}
+										</p>
+									</div>
+									<div>
+										<p class="text-gray-600">Schedule</p>
+										<p class="font-semibold text-gray-800">
+											{session.day} at {formatTime(session.time)}
+										</p>
+									</div>
+									<div>
+										<p class="text-gray-600">Location</p>
+										<p class="font-semibold text-gray-800">
+											{(session as any).location || 'Zoom'}
+										</p>
+									</div>
+								</div>
 
-                                <!-- START/END BUTTONS -->
-                                <div class="mt-3 flex gap-2 border-t pt-3">
-                                    {#if !hasStarted}
-                                        <button
-                                                onclick={() => startSession(sid)}
-                                                disabled={sessionActionLoading[sid]}
-                                                class="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
-                                        >
-                                            {sessionActionLoading[sid] ? 'Starting...' : '▶️ Start Session'}
-                                        </button>
-                                    {:else if hasStarted && !hasEnded}
-                                        <button
-                                                onclick={() => endSession(sid)}
-                                                disabled={sessionActionLoading[sid]}
-                                                class="flex-1 rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50"
-                                        >
-                                            {sessionActionLoading[sid] ? 'Ending...' : '⏹️ End Session'}
-                                        </button>
-                                    {:else}
-                                        <div class="flex-1 rounded-lg bg-gray-300 px-4 py-2 text-center text-sm text-gray-600">
-                                            ✅ Session Completed
-                                        </div>
-                                    {/if}
-                                </div>
-                            </div>
-                        {/each}
+								<!-- START/END BUTTONS -->
+								<div class="mt-3 flex gap-2 border-t pt-3">
+									{#if !hasStarted}
+										<button
+											onclick={() => startSession(sid)}
+											disabled={sessionActionLoading[sid]}
+											class="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+										>
+											{sessionActionLoading[sid] ? 'Starting...' : '▶️ Start Session'}
+										</button>
+									{:else if hasStarted && !hasEnded}
+										<button
+											onclick={() => endSession(sid)}
+											disabled={sessionActionLoading[sid]}
+											class="flex-1 rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50"
+										>
+											{sessionActionLoading[sid] ? 'Ending...' : '⏹️ End Session'}
+										</button>
+									{:else}
+										<div
+											class="flex-1 rounded-lg bg-gray-300 px-4 py-2 text-center text-sm text-gray-600"
+										>
+											✅ Session Completed
+										</div>
+									{/if}
+								</div>
+							</div>
+						{/each}
 					</div>
 				</section>
 			{/if}
@@ -682,22 +686,19 @@
 										</p>
 									</div>
 								</div>
-                                <div class="mt-3 border-t pt-3">
-                                    {#if !(session as any).hasRated}
-                                        <button
-                                                onclick={() => openReviewModal(session)}
-                                                class="rounded bg-yellow-600 px-4 py-2 text-sm text-white hover:bg-yellow-700"
-                                        >
-                                            Rate Tutor
-                                        </button>
-                                    {:else}
-                                        <p class="text-sm text-green-700">
-                                            Thank you for rating this tutor!
-                                        </p>
-                                    {/if}
-                                </div>
-
-                            </div>
+								<div class="mt-3 border-t pt-3">
+									{#if !(session as any).hasRated}
+										<button
+											onclick={() => openReviewModal(session)}
+											class="rounded bg-yellow-600 px-4 py-2 text-sm text-white hover:bg-yellow-700"
+										>
+											Rate Tutor
+										</button>
+									{:else}
+										<p class="text-sm text-green-700">Thank you for rating this tutor!</p>
+									{/if}
+								</div>
+							</div>
 						{/each}
 					</div>
 				</section>
@@ -833,6 +834,21 @@
 													<option value={9 + i}>
 														{formatTime(9 + i)}
 													</option>
+												{/each}
+											</select>
+										</div>
+
+										<div>
+											<label class="mb-1 block text-xs text-gray-600" for={`location-${tutor.tid}`}
+												>Location</label
+											>
+											<select
+												id={`location-${tutor.tid}`}
+												bind:value={bookingStates[tutor.tid].selectedLocation}
+												class="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+											>
+												{#each SESSION_LOCATIONS as loc}
+													<option value={loc}>{loc}</option>
 												{/each}
 											</select>
 										</div>
@@ -1018,18 +1034,18 @@
 					</div>
 				</div>
 
-<!--				<div>-->
-<!--					<label class="mb-1 block text-sm font-medium text-gray-700" for="review-comment"-->
-<!--						>Comment</label-->
-<!--					>-->
-<!--					<textarea-->
-<!--						id="review-comment"-->
-<!--						bind:value={reviewForm.comment}-->
-<!--						rows="4"-->
-<!--						placeholder="Share your experience..."-->
-<!--						class="w-full rounded-lg border border-gray-300 px-3 py-2"-->
-<!--					></textarea>-->
-<!--				</div>-->
+				<!--				<div>-->
+				<!--					<label class="mb-1 block text-sm font-medium text-gray-700" for="review-comment"-->
+				<!--						>Comment</label-->
+				<!--					>-->
+				<!--					<textarea-->
+				<!--						id="review-comment"-->
+				<!--						bind:value={reviewForm.comment}-->
+				<!--						rows="4"-->
+				<!--						placeholder="Share your experience..."-->
+				<!--						class="w-full rounded-lg border border-gray-300 px-3 py-2"-->
+				<!--					></textarea>-->
+				<!--				</div>-->
 
 				<div class="flex gap-3 pt-4">
 					<button
