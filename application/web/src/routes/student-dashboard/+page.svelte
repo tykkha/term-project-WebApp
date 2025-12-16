@@ -42,7 +42,7 @@
 		firstName: '',
 		lastName: '',
 		phone: '',
-		studentId: '',
+		studentID: '',
 		bio: '',
 		profilePicture: ''
 	});
@@ -306,7 +306,7 @@
 		isEditSubmitting = true;
 
 		try {
-			const updatedBio = `Student ID: ${editForm.studentId}, Phone: ${editForm.phone}`;
+			const updatedBio = `Student ID: ${editForm.studentID}, Phone: ${editForm.phone}`;
 
 			await updateUser(user!.uid, {
 				firstName: editForm.firstName,
@@ -441,7 +441,7 @@
 					firstName: profile.firstName || '',
 					lastName: profile.lastName || '',
 					phone: extractPhone(profile.bio),
-					studentId: extractStudentId(profile.bio),
+					studentID: extractStudentId(profile.bio),
 					bio: profile.bio || '',
 					profilePicture: profile.profilePicture || ''
 				};
@@ -973,7 +973,7 @@
 					<input
 						id="student-id-input"
 						type="text"
-						bind:value={editForm.studentId}
+						bind:value={editForm.studentID}
 						class="w-full rounded-lg border border-gray-300 px-3 py-2"
 					/>
 				</div>

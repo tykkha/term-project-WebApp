@@ -28,7 +28,7 @@
 		const mockUser = {
 			name: 'John Doe',
 			email: email,
-			studentId: '920123456'
+			studentID: '920123456'
 		};
 
 		//call the onLogin callback passed from layout

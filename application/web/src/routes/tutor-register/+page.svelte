@@ -14,7 +14,7 @@
 		lastName: '',
 		email: '',
 		phone: '',
-		studentId: '',
+		studentID: '',
 		password: '',
 		confirmPassword: '',
 		major: '',
@@ -75,7 +75,7 @@
 			return false;
 		}
 
-		if (!form.studentId) {
+		if (!form.studentID) {
 			errorMessage = 'Student ID is required.';
 			return false;
 		}
@@ -130,7 +130,7 @@
 
 		try {
 			//Pack tutor-specific info into bio
-			const tutorBio = `${form.shortBio || ''}\n\nMajor: ${form.major}\nGPA: ${form.gpa}\nGraduation: ${form.graduationYear || 'N/A'}\nStudent ID: ${form.studentId}${form.phone ? `\nPhone: ${form.phone}` : ''}`;
+			const tutorBio = `${form.shortBio || ''}\n\nMajor: ${form.major}\nGPA: ${form.gpa}\nGraduation: ${form.graduationYear || 'N/A'}\nStudent ID: ${form.studentID}${form.phone ? `\nPhone: ${form.phone}` : ''}`;
 
 			//Register user account
 			console.log('Step 1: Registering user...');
@@ -274,13 +274,13 @@
 			<!-- Student & academic info -->
 			<div class="grid gap-4 md:grid-cols-3">
 				<div>
-					<label for="studentId" class="mb-1 block text-sm font-medium text-gray-700"
+					<label for="studentID" class="mb-1 block text-sm font-medium text-gray-700"
 						>Student ID</label
 					>
 					<input
-						id="studentId"
+						id="studentID"
 						type="text"
-						bind:value={form.studentId}
+						bind:value={form.studentID}
 						class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
 						required
 					/>

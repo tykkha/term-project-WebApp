@@ -83,7 +83,7 @@ export interface RegisterPayload {
 	email: string;
 	password: string;
 	phone: string | null;
-	studentId: string | null;
+	studentID: string | null;
 	profilePicture?: string | null;
 	bio?: string | null;
 }

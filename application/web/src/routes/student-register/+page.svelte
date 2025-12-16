@@ -8,7 +8,7 @@
         lastName: '',
         email: '',
         phone: '',
-        studentId: '',
+        studentID: '',
         password: '',
         confirmPassword: '',
         agreeToTerms: false,
@@ -36,7 +36,7 @@
             return false;
         }
 
-        if (!form.studentId) {
+        if (!form.studentID) {
             errorMessage = 'Student ID is required.';
             return false;
         }
@@ -74,9 +74,9 @@
             email: form.email,
             password: form.password,
             phone: form.phone || null,
-            studentId: form.studentId || null,
+            studentID: form.studentID || null,
             profilePicture: form.profilePicture || null,
-            bio: `New User: ${form.firstName} ${form.lastName}, Student ID: ${form.studentId}`
+            bio: `New User: ${form.firstName} ${form.lastName}, Student ID: ${form.studentID}`
         };
 
         try {
@@ -176,13 +176,13 @@
 
             <div class="grid gap-4 md:grid-cols-2">
                 <div>
-                    <label for="studentId" class="mb-1 block text-sm font-medium text-gray-700"
+                    <label for="studentID" class="mb-1 block text-sm font-medium text-gray-700"
                         >Student ID</label
                     >
                     <input
-                        id="studentId"
+                        id="studentID"
                         type="text"
-                        bind:value={form.studentId}
+                        bind:value={form.studentID}
                         class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#231161] focus:outline-none focus:ring-2 focus:ring-[#231161]/30"
                         required
                     />
