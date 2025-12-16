@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
-from dependencies import get_auth_manager, get_session_manager
+from dependencies import get_auth_manager, get_session_manager, get_messages_manager
 from db.Sessions import GatorGuidesSessions
 from db.Auth import GatorGuidesAuth
+from db.Messages import GatorGuidesMessages
 import logging
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,12 @@ async def get_current_user(authorization: str = Header(None), auth_mgr: GatorGui
 
 # Creates a new tutoring session
 @router.post("/sessions", response_model=Dict[str, Any])
-async def create_session(request: CreateSessionRequest, current_user: int = Depends(get_current_user), session_mgr: GatorGuidesSessions = Depends(get_session_manager)):
+async def create_session(
+    request: CreateSessionRequest, 
+    current_user: int = Depends(get_current_user), 
+    session_mgr: GatorGuidesSessions = Depends(get_session_manager),
+    messages_mgr: GatorGuidesMessages = Depends(get_messages_manager)
+):
     try:
         if current_user != request.uid:
             raise HTTPException(
@@ -49,11 +55,46 @@ async def create_session(request: CreateSessionRequest, current_user: int = Depe
             time=request.time
         )
         
-        if session:
-            logger.info(f"Session created: {session['sid']}")
-            return session
-        else:
+        if not session:
             raise HTTPException(status_code=400, detail="Failed to create session")
+        
+        logger.info(f"Session created: {session['sid']}")
+        
+        # Send automatic notification message
+        try:
+            notification_info = session_mgr.get_session_notification_info(session['sid'])
+            
+            if notification_info:
+                student_name = f"{notification_info['student_first_name']} {notification_info['student_last_name']}"
+                course_name = notification_info['course_name']
+                day = notification_info['day']
+                time = notification_info['time']
+                tutor_uid = notification_info['tutor_uid']
+                
+                # Format time nicely (e.g., 14 -> "2:00 PM")
+                hour = time % 12
+                if hour == 0:
+                    hour = 12
+                am_pm = "AM" if time < 12 else "PM"
+                time_str = f"{hour}:00 {am_pm}"
+                
+                # Create auto-message
+                auto_message = f"{student_name} has scheduled a tutoring session for {course_name} on {day} at {time_str}."
+                
+                # Send message from student to tutor
+                messages_mgr.send_message(
+                    sender_uid=request.uid,
+                    receiver_uid=tutor_uid,
+                    content=auto_message
+                )
+                
+                logger.info(f"Auto-message sent for session {session['sid']}")
+            
+        except Exception as e:
+            # Don't fail the session creation if auto-message fails
+            logger.error(f"Failed to send auto-message for session {session['sid']}: {e}", exc_info=True)
+        
+        return session
             
     except HTTPException:
         raise

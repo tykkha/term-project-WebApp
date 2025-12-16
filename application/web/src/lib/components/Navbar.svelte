@@ -80,7 +80,7 @@
 	<div class="flex w-full justify-center gap-8 bg-[#ffdc70] p-2 text-center text-black">
 		<a href="/">Home</a>
 		<a href="/calendar">Calendar</a>
-		<a href="/search">Search</a>
+		<a href="/messages">Messages</a>
 		<a href="/dashboard">Dashboard</a>
 	</div>
 

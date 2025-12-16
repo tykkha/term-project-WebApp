@@ -42,6 +42,43 @@ class GatorGuidesSessions:
             if conn:
                 conn.close()
     
+    def get_session_notification_info(self, session_id: int) -> Optional[Dict[str, Any]]:
+        conn = None
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            query = """
+                SELECT 
+                    s.uid as student_uid,
+                    s.tid,
+                    s.day,
+                    s.time,
+                    u.firstName as student_first_name,
+                    u.lastName as student_last_name,
+                    tu.uid as tutor_uid,
+                    tags.tags as course_name
+                FROM Sessions s
+                INNER JOIN User u ON s.uid = u.uid
+                INNER JOIN Tutor t ON s.tid = t.tid
+                INNER JOIN User tu ON t.uid = tu.uid
+                INNER JOIN Tags tags ON s.tagsID = tags.tagsID
+                WHERE s.sid = %s
+            """
+            
+            cursor.execute(query, (session_id,))
+            info = cursor.fetchone()
+            cursor.close()
+            
+            return info
+            
+        except Exception as e:
+            logger.error(f"Get session notification info error: {e}", exc_info=True)
+            return None
+        finally:
+            if conn:
+                conn.close()
+    
     def get_session(self, session_id: int) -> Optional[Dict[str, Any]]:
         conn = None
         try:
