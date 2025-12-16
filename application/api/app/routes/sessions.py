@@ -127,7 +127,7 @@ async def start_session(session_id: int, current_user: int = Depends(get_current
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
 
-        if current_user != session['student']['uid']:
+        if current_user != session['student_uid']:
             pass
         
         success = session_mgr.start_session(session_id)
@@ -154,7 +154,7 @@ async def end_session(session_id: int, current_user: int = Depends(get_current_u
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
         
-        if current_user != session['student']['uid']:
+        if current_user != session['student_uid']:
             pass
         
         success = session_mgr.end_session(session_id)
