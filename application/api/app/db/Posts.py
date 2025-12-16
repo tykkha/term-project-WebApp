@@ -39,6 +39,7 @@ class GatorGuidesPosts:
             """
             
             cursor.execute(query, (tid, tags_id, content))
+            conn.commit()
             post_id = cursor.lastrowid
             cursor.close()
 
@@ -46,7 +47,10 @@ class GatorGuidesPosts:
 
         except Exception as e:
             logger.error(f"Create post error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return None
+
         finally:
             if conn:
                 conn.close()
@@ -189,6 +193,7 @@ class GatorGuidesPosts:
             query = f"UPDATE Posts SET {', '.join(updates)} WHERE pid = %s"
             
             cursor.execute(query, tuple(values))
+            conn.commit()
             rowcount = cursor.rowcount
             cursor.close()
             
@@ -196,7 +201,10 @@ class GatorGuidesPosts:
 
         except Exception as e:
             logger.error(f"Update post error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return False
+        
         finally:
             if conn:
                 conn.close()
@@ -209,6 +217,7 @@ class GatorGuidesPosts:
             
             query = "DELETE FROM Posts WHERE pid = %s"
             cursor.execute(query, (pid,))
+            conn.commit()
             rowcount = cursor.rowcount
             cursor.close()
             
@@ -216,7 +225,10 @@ class GatorGuidesPosts:
 
         except Exception as e:
             logger.error(f"Delete post error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return False
+        
         finally:
             if conn:
                 conn.close()

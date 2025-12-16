@@ -24,6 +24,7 @@ class GatorGuidesSessions:
             """
             
             cursor.execute(query, (uid, tid, tags_id, day, time, location))
+            conn.commit()  
             session_id = cursor.lastrowid
             
             # Fetch the created session
@@ -37,6 +38,8 @@ class GatorGuidesSessions:
             
         except Exception as e:
             logger.error(f"Create session error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return None
         finally:
             if conn:
@@ -128,6 +131,7 @@ class GatorGuidesSessions:
             """
             
             cursor.execute(query, (session_id,))
+            conn.commit()  
             rowcount = cursor.rowcount
             cursor.close()
             
@@ -138,6 +142,8 @@ class GatorGuidesSessions:
             
         except Exception as e:
             logger.error(f"Start session error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return False
         finally:
             if conn:
@@ -156,6 +162,7 @@ class GatorGuidesSessions:
             """
             
             cursor.execute(query, (session_id,))
+            conn.commit()  
             rowcount = cursor.rowcount
             cursor.close()
             
@@ -166,6 +173,8 @@ class GatorGuidesSessions:
             
         except Exception as e:
             logger.error(f"End session error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return False
         finally:
             if conn:
@@ -180,6 +189,7 @@ class GatorGuidesSessions:
             query = "DELETE FROM Sessions WHERE sid = %s"
             
             cursor.execute(query, (session_id,))
+            conn.commit()  
             rowcount = cursor.rowcount
             cursor.close()
             
@@ -190,6 +200,8 @@ class GatorGuidesSessions:
             
         except Exception as e:
             logger.error(f"Delete session error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return False
         finally:
             if conn:
@@ -219,7 +231,6 @@ class GatorGuidesSessions:
             sessions = cursor.fetchall()
             cursor.close()
             
-            # Transform the flat response to include nested tutor object
             result = []
             for session in sessions:
                 result.append({
@@ -229,6 +240,7 @@ class GatorGuidesSessions:
                     'tagsID': session['tagsID'],
                     'day': session['day'],
                     'time': session['time'],
+                    'location': session.get('location', 'Zoom'),
                     'started': session.get('started'),
                     'concluded': session.get('concluded'),
                     'course': session.get('course_tag', 'Unknown'),
@@ -271,7 +283,6 @@ class GatorGuidesSessions:
             sessions = cursor.fetchall()
             cursor.close()
             
-            # Transform the flat response to include nested student object
             result = []
             for session in sessions:
                 result.append({
@@ -281,6 +292,7 @@ class GatorGuidesSessions:
                     'tagsID': session['tagsID'],
                     'day': session['day'],
                     'time': session['time'],
+                    'location': session.get('location', 'Zoom'),
                     'started': session.get('started'),
                     'concluded': session.get('concluded'),
                     'course': session.get('course_tag', 'Unknown'),

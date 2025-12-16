@@ -30,6 +30,7 @@ class GatorGuidesAvailability:
             """
             
             cursor.execute(query, (tid, day, start_time, end_time))
+            conn.commit()
             availability_id = cursor.lastrowid
             
             cursor.execute("SELECT * FROM TutorAvailability WHERE availabilityID = %s", (availability_id,))
@@ -41,6 +42,8 @@ class GatorGuidesAvailability:
             
         except Exception as e:
             logger.error(f"Add availability error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return None
         finally:
             if conn:
@@ -84,7 +87,7 @@ class GatorGuidesAvailability:
             
             query = "DELETE FROM TutorAvailability WHERE availabilityID = %s AND tid = %s"
             cursor.execute(query, (availability_id, tid))
-            
+            conn.commit()
             rowcount = cursor.rowcount
             cursor.close()
             
@@ -95,6 +98,8 @@ class GatorGuidesAvailability:
             
         except Exception as e:
             logger.error(f"Remove availability error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return False
         finally:
             if conn:
@@ -123,13 +128,15 @@ class GatorGuidesAvailability:
                         slot['startTime'],
                         slot['endTime']
                     ))
-            
+            conn.commit()
             cursor.close()
             logger.info(f"Bulk availability set for tid={tid}, {len(availability_slots)} slots")
             return True
             
         except Exception as e:
             logger.error(f"Set bulk availability error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return False
         finally:
             if conn:

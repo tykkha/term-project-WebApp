@@ -1,6 +1,7 @@
 from typing import Optional, Dict, Any, List
 import logging
 from db.Auth import ConnectionPool
+import mysql.connector
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +35,14 @@ class GatorGuidesTutors:
                 update_query = "UPDATE Tutor SET rating = 0.0 WHERE tid = %s"
                 cursor.execute(update_query, (tid,))
             
+            conn.commit()  
             cursor.close()
             return True
 
         except Exception as e:
             logger.error(f"Update tutor rating error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return False
         finally:
             if conn:
@@ -80,6 +84,7 @@ class GatorGuidesTutors:
                     VALUES (%s, %s, %s, 'pending')
                     """
             cursor.execute(query, (uid, rating, status))
+            conn.commit()  
             tutor_id = cursor.lastrowid
             cursor.close()
 
@@ -95,6 +100,8 @@ class GatorGuidesTutors:
 
         except Exception as e:
             logger.error(f"Create tutor error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return None
         finally:
             if conn:
@@ -113,6 +120,7 @@ class GatorGuidesTutors:
             
             query = "UPDATE Tutor SET verificationStatus = %s WHERE tid = %s"
             cursor.execute(query, (status, tid))
+            conn.commit()  
             rowcount = cursor.rowcount
             cursor.close()
             
@@ -120,6 +128,8 @@ class GatorGuidesTutors:
 
         except Exception as e:
             logger.error(f"Update verification error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return False
         finally:
             if conn:
@@ -142,14 +152,18 @@ class GatorGuidesTutors:
                 try:
                     query = "INSERT INTO TutorTags (tid, tagsID) VALUES (%s, %s)"
                     cursor.execute(query, (tid, tag_id))
-                except Exception:
+                except mysql.connector.IntegrityError:
+                    # Tag already exists for this tutor, skip
                     continue
 
+            conn.commit()  
             cursor.close()
             return True
 
         except Exception as e:
             logger.error(f"Add tutor tags error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return False
         finally:
             if conn:
@@ -463,6 +477,7 @@ class GatorGuidesTutors:
                     VALUES (%s, %s, %s, %s, NOW())
                     """
             cursor.execute(query, (tid, uid, sid, rating))
+            conn.commit()  
             rating_id = cursor.lastrowid
             cursor.close()
 
@@ -477,11 +492,15 @@ class GatorGuidesTutors:
                 'message': 'Rating submitted successfully. Tutor rating updated.'
             }
 
-        except Exception:
-            logger.error(f"User {uid} already rated session {sid}")
+        except mysql.connector.IntegrityError as e:
+            logger.error(f"User {uid} already rated session {sid}: {e}")
+            if conn:
+                conn.rollback()
             return None
         except Exception as e:
             logger.error(f"Create rating error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return None
         finally:
             if conn:
@@ -644,6 +663,7 @@ class GatorGuidesTutors:
             # Update to unapproved
             update_query = "UPDATE Tutor SET verificationStatus = 'unapproved' WHERE tid = %s"
             cursor.execute(update_query, (tid,))
+            conn.commit()  
             rowcount = cursor.rowcount
             cursor.close()
             
@@ -655,6 +675,8 @@ class GatorGuidesTutors:
 
         except Exception as e:
             logger.error(f"Reject tutor error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return False
         finally:
             if conn:
@@ -684,6 +706,7 @@ class GatorGuidesTutors:
             # Update to approved
             update_query = "UPDATE Tutor SET verificationStatus = 'approved' WHERE tid = %s"
             cursor.execute(update_query, (tid,))
+            conn.commit()  
             rowcount = cursor.rowcount
             cursor.close()
             
@@ -695,6 +718,8 @@ class GatorGuidesTutors:
 
         except Exception as e:
             logger.error(f"Tutor approval error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return False
         finally:
             if conn:

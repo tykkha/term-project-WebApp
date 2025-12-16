@@ -73,6 +73,9 @@ export interface User {
 	firstName: string;
 	lastName: string;
 	email: string;
+	type: 'user' | 'admin';
+	phone?: string | null;
+	studentID?: string | null;
 	profilePicture?: string | null;
 	bio?: string | null;
 }

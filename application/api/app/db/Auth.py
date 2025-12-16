@@ -155,12 +155,15 @@ class GatorGuidesAuth:
             """
             
             cursor.execute(query, (session_id, uid, expires_at))
+            conn.commit()
             cursor.close()
             logger.info(f"Session created for user {uid}")
             return session_id
             
         except Exception as e:
             logger.error(f"Create session error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return None
         finally:
             if conn:
@@ -208,12 +211,15 @@ class GatorGuidesAuth:
             
             query = "DELETE FROM LoginSessions WHERE sessionID = %s"
             cursor.execute(query, (session_id,))
+            conn.commit()
             rowcount = cursor.rowcount
             cursor.close()
             return rowcount > 0
             
         except Exception as e:
             logger.error(f"Delete session error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return False
         finally:
             if conn:
@@ -228,11 +234,14 @@ class GatorGuidesAuth:
             
             query = "DELETE FROM LoginSessions WHERE uid = %s"
             cursor.execute(query, (uid,))
+            conn.commit()
             cursor.close()
             return True
             
         except Exception as e:
             logger.error(f"Delete user sessions error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return False
         finally:
             if conn:
@@ -247,6 +256,7 @@ class GatorGuidesAuth:
             
             query = "DELETE FROM LoginSessions WHERE expiresAt < NOW()"
             cursor.execute(query)
+            conn.commit()
             count = cursor.rowcount
             cursor.close()
             logger.info(f"Cleaned up expired sessions")
@@ -254,6 +264,8 @@ class GatorGuidesAuth:
             
         except Exception as e:
             logger.error(f"Cleanup error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return 0
         finally:
             if conn:

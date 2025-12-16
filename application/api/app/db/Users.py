@@ -44,6 +44,7 @@ class GatorGuidesUsers:
                 query,
                 (first_name, last_name, email, hashed_password, user_type, phone, studentID, profile_picture, bio)
             )
+            conn.commit()
             user_id = cursor.lastrowid
             cursor.close()
 
@@ -61,11 +62,11 @@ class GatorGuidesUsers:
             }
 
         except Exception as e:
-            logger.error(f"Create user failed - integrity error: {e}")
+            logger.error(f"Create user failed - integrity error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return None
-        except Exception as e:
-            logger.error(f"Create user error: {e}", exc_info=True)
-            return None
+        
         finally:
             if conn:
                 conn.close()
@@ -182,6 +183,7 @@ class GatorGuidesUsers:
             query = f"UPDATE User SET {', '.join(updates)} WHERE uid = %s"
             
             cursor.execute(query, tuple(values))
+            conn.commit()
             rowcount = cursor.rowcount
             cursor.close()
             
@@ -189,6 +191,8 @@ class GatorGuidesUsers:
 
         except Exception as e:
             logger.error(f"Update user error: {e}", exc_info=True)
+            if conn:
+                conn.rollback()
             return False
         finally:
             if conn:

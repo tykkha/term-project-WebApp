@@ -83,6 +83,9 @@
             await registerUser(payload);
             successMessage = 'Registration successful! Redirecting to login...';
 
+            form.password = '';
+            form.confirmPassword = '';
+
             setTimeout(() => goto('/login'), 1500);
         } catch (err: any) {
             console.error(err);
