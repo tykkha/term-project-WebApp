@@ -16,6 +16,8 @@
         type CreateReviewPayload,
         getUserSessions, 
         type Session,
+        getTutorAvailability,
+		type AvailabilitySlot
     } from '$lib/api';
     import { onMount } from 'svelte';
 
@@ -38,16 +40,6 @@
         bio?: string;
     }
 
-    // Tutor's available sessions 
-    interface AvailableTutorSessions {
-        aId: number; 
-        tid: number;           
-        day: number;   
-        startTime: number;      
-        endTime: number;
-        isActive: boolean;
-    }
-
     // Stores full tutor info 
     let profile = $state<Profile>({
         photo: '',
@@ -56,7 +48,7 @@
         expertise: [],
         bio: '',
     });
-    let tutorSessions = $state([] as AvailableTutorSessions[]);
+    let tutorSessions = $state([] as AvailabilitySlot[]);
     let tutorPosts = $state([] as Post[]); 
     
     //  Post Form  
@@ -106,10 +98,9 @@
             profile = pData as Profile;
 
             // Pull tutor's available sessions
-            const aResponse = await authFetch(`/api/tutors/${tutorIdNum}/sessions`);
-            const aData = await aResponse.json();
-            console.log('Tutor Availability Sessions Data:', aData);
-            tutorSessions = aData as AvailableTutorSessions[];
+            const availableSessions = await getTutorAvailability(tutorIdNum);
+            tutorSessions = availableSessions;
+            console.log('Tutor Availability Sessions Data:', tutorSessions);
 
             await loadTutorPosts();
         } catch (error) {
@@ -351,12 +342,12 @@
                     </p>
                 {:else}
                     <div class="space-y-4">
-                        {#each tutorSessions as session (session.aId)}
+                        {#each tutorSessions as session (session.availabilityID)}
                             <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-md">
                                 <div class="flex justify-between items-center">
                                     <div>
                                         <h3 class="text-lg font-semibold text-gray-800">
-                                            {new Date(session.day).toLocaleDateString()}
+                                            {session.day}
                                         </h3>
                                         <p class="text-gray-600">
                                             Time: {session.startTime}:00 - {session.endTime}:00
