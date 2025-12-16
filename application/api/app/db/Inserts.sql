@@ -32,7 +32,7 @@ INSERT INTO User (firstName, lastName, email, password, Type, profilePicture, bi
 ('Stephanie', 'Hall', 'stephanie.hall@sfsu.edu', '$2b$12$ibcKZeLUxD7gGvTCuOpuOufpdNOm8ziB9CQ42763kRGsKQQGDFAAK', 'user', NULL, NULL),
 ('Justin', 'Allen', 'justin.allen@sfsu.edu', '$2b$12$ibcKZeLUxD7gGvTCuOpuOufpdNOm8ziB9CQ42763kRGsKQQGDFAAK', 'user', NULL, NULL),
 ('Amber', 'Young', 'amber.young@sfsu.edu', '$2b$12$ibcKZeLUxD7gGvTCuOpuOufpdNOm8ziB9CQ42763kRGsKQQGDFAAK', 'user', NULL, NULL),
-('Admin', 'User', 'admin@sfsu.edu', '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'admin', NULL, NULL),
+('Admin', 'User', 'admin@sfsu.edu', '$2b$12$ibcKZeLUxD7gGvTCuOpuOufpdNOm8ziB9CQ42763kRGsKQQGDFAAK', 'admin', NULL, NULL),
 ('Mark', 'Johnson', 'mark.johnson@sfsu.edu', '$2b$12$ibcKZeLUxD7gGvTCuOpuOufpdNOm8ziB9CQ42763kRGsKQQGDFAAK', 'user', NULL, 'Computer Science student looking for tutoring help.'),
 ('Lisa', 'Smith', 'lisa.smith@sfsu.edu', '$2b$12$ibcKZeLUxD7gGvTCuOpuOufpdNOm8ziB9CQ42763kRGsKQQGDFAAK', 'user', NULL, 'Math major seeking calculus support.'),
 ('Tom', 'Williams', 'tom.williams@sfsu.edu', '$2b$12$ibcKZeLUxD7gGvTCuOpuOufpdNOm8ziB9CQ42763kRGsKQQGDFAAK', 'user', NULL, NULL);
