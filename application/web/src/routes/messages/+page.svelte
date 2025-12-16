@@ -351,7 +351,7 @@
 <style>
 	.chat-container {
 		display: flex;
-		height: 100vh;
+		height: 80vh;
 		background: #f5f5f5;
 	}
 
@@ -463,6 +463,8 @@
 		display: flex;
 		flex-direction: column;
 		background: white;
+		max-height: 80vh;
+		overflow: hidden;
 	}
 
 	.chat-header {
@@ -471,6 +473,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		flex-shrink: 0;
 	}
 
 	.chat-header-info {
@@ -581,6 +584,7 @@
 		display: flex;
 		gap: 12px;
 		background: white;
+		flex-shrink: 0;
 	}
 
 	.message-input {
@@ -659,5 +663,6 @@
 		padding: 12px 20px;
 		text-align: center;
 		font-size: 14px;
+		flex-shrink: 0;
 	}
 </style>

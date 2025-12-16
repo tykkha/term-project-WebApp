@@ -560,3 +560,102 @@ export async function createReview(payload: CreateReviewPayload): Promise<Review
 
     return res.json();
 }
+
+/* ---------- MESSAGES ---------- */
+
+export interface Message {
+	mid: number;
+	senderUID: number;
+	receiverUID: number;
+	senderName: string;
+	content: string;
+	timestamp: string;
+}
+
+export interface Conversation {
+	otherUID: number;
+	otherName: string;
+	lastMessage: string;
+	lastMessageTime: string;
+}
+
+export interface SendMessagePayload {
+	senderUID: number;
+	receiverUID: number;
+	content: string;
+}
+
+// Check if two users can message each other
+export async function canMessage(uid1: number, uid2: number): Promise<boolean> {
+	const res = await authFetch(`${API_BASE}/messages/can-message/${uid1}/${uid2}`);
+	if (!res.ok) {
+		return false;
+	}
+	const data = await res.json();
+	return data.allowed;
+}
+
+// Send a message
+export async function sendMessage(payload: SendMessagePayload): Promise<Message> {
+	const res = await authFetch(`${API_BASE}/messages`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(payload)
+	});
+
+	if (!res.ok) {
+		let errMsg = 'Failed to send message';
+		try {
+			const err = await res.json();
+			if (err?.detail) errMsg = err.detail;
+		} catch {
+			/* ignore */
+		}
+		throw new Error(errMsg);
+	}
+
+	return res.json();
+}
+
+// Get conversation between two users
+export async function getConversation(
+	uid1: number,
+	uid2: number,
+	limit: number = 50,
+	offset: number = 0
+): Promise<Message[]> {
+	const res = await authFetch(
+		`${API_BASE}/messages/${uid1}/${uid2}?limit=${limit}&offset=${offset}`
+	);
+	if (!res.ok) {
+		throw new Error('Failed to load conversation');
+	}
+	return res.json();
+}
+
+// Get recent conversations for a user
+export async function getRecentConversations(uid: number, limit: number = 20): Promise<Conversation[]> {
+	const res = await authFetch(`${API_BASE}/users/${uid}/conversations?limit=${limit}`);
+	if (!res.ok) {
+		throw new Error('Failed to load conversations');
+	}
+	return res.json();
+}
+
+// WebSocket connection helper
+export function createWebSocket(userId: number, token: string): WebSocket {
+	const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+	
+	let wsUrl: string;
+	if (isDevelopment) {
+		const backendPort = '8001';
+		wsUrl = `ws://localhost:${backendPort}/api/ws/${userId}?token=${token}`;
+	} else {
+		// In production, use same host with wss protocol
+		const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+		wsUrl = `${protocol}//${window.location.host}/api/ws/${userId}?token=${token}`;
+	}
+	
+	console.log('Connecting to WebSocket:', wsUrl);
+	return new WebSocket(wsUrl);
+}
