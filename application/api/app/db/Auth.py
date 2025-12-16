@@ -39,7 +39,7 @@ class ConnectionPool:
                 database=database,
                 user=user,
                 password=password,
-                autocommit=True
+                autocommit=False
             )
             self._initialized = True
             logger.info(f"Connection pool initialized")

@@ -2,3 +2,11 @@
 .DS_STORE
 .idea
 build.zip
+application/api/app/test_websockets.py
+application/api/app/test_send_msg.py
+application/api/app/test_auth.py
+application/api/app/test_auth_websocket.py
+application/api/app/.env
+application/api/app/db/min-Inserts.sql
+application/api/app/db/Inserts.sql
+queries/Query.sql

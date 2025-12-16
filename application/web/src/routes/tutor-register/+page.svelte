@@ -130,7 +130,7 @@
 
 		try {
 			//Pack tutor-specific info into bio
-			const tutorBio = `${form.shortBio || ''}\n\nMajor: ${form.major}\nGPA: ${form.gpa}\nGraduation: ${form.graduationYear || 'N/A'}\nStudent ID: ${form.studentID}${form.phone ? `\nPhone: ${form.phone}` : ''}`;
+			const tutorBio = `${form.shortBio || ''}\n\nMajor: ${form.major}\nGPA: ${form.gpa}\nGraduation: ${form.graduationYear || 'N/A'}`;
 
 			//Register user account
 			console.log('Step 1: Registering user...');
@@ -139,6 +139,8 @@
 				lastName: form.lastName,
 				email: form.email,
 				password: form.password,
+				phone: form.phone || null,
+				studentID: form.studentID || null,
 				profilePicture: form.profilePicture || null,
 				bio: tutorBio
 			});
