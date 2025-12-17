@@ -10,6 +10,10 @@
         getTutorAvailability,
         addAvailabilitySlot,
         deleteAvailabilitySlot,
+        getTags,
+        createSession,
+        type SessionLocation,
+        SESSION_LOCATIONS,
         type User,
         type Session,
         type AvailabilitySlot,
@@ -71,6 +75,41 @@
 
     const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const hours = Array.from({ length: 15 }, (_, i) => i + 8); // 8 AM to 10 PM
+
+    // ---- STUDENT BOOKING / TUTOR LIST STATE (as student) ----
+    let tutors = $state<any[]>([]);
+    let filteredTutors = $state<any[] | null>(null);
+    let tutorCourses = $state<{ [key: number]: any[] }>({});
+    let tutorCoursesLoading = $state<{ [key: number]: boolean }>({});
+    let tutorCoursesError = $state<{ [key: number]: boolean }>({});
+    let tags = $state<any[]>([]);
+    let activeTagId = $state<number | null>(null);
+
+    let studentUpcomingSessions = $state<Session[]>([]);
+    let studentPastSessions = $state<Session[]>([]);
+
+    let bookingStates = $state<{
+        [key: number]: {
+            isOpen: boolean;
+            selectedCourse: number | null;
+            selectedDay: string;
+            selectedTime: number;
+            selectedLocation: SessionLocation;
+            isSubmitting: boolean;
+            error: string;
+            success: string;
+        };
+    }>({});
+
+    let sessionActionLoading = $state<{ [key: number]: boolean }>({});
+
+    let showReviewModal = $state(false);
+    let reviewSession = $state<Session | null>(null);
+    let reviewForm = $state({
+        rating: 5,
+        comment: ''
+    });
+    let isReviewSubmitting = $state(false);
 
     // Tutor Post variables
     let tutorPosts = $state([] as Post[]); 
@@ -226,7 +265,9 @@
         );
 
         if (overlapping) {
-            availabilityError = `This overlaps with existing slot: ${overlapping.day} ${formatTime(overlapping.startTime)} - ${formatTime(overlapping.endTime)}`;
+            availabilityError = `This overlaps with existing slot: ${overlapping.day} ${formatTime(
+                overlapping.startTime
+            )} - ${formatTime(overlapping.endTime)}`;
             return;
         }
 
@@ -255,7 +296,9 @@
         if (!tutorProfile?.tid || !slot.availabilityID) return;
 
         const confirmed = confirm(
-            `Remove availability for ${slot.day} ${formatTime(slot.startTime)} - ${formatTime(slot.endTime)}?`
+            `Remove availability for ${slot.day} ${formatTime(slot.startTime)} - ${formatTime(
+                slot.endTime
+            )}?`
         );
         if (!confirmed) return;
 
@@ -290,7 +333,9 @@
                 const allTutors = await res.json();
 
                 // Filter for pending tutors on frontend
-                pendingTutors = allTutors.filter((tutor: any) => tutor.verificationStatus === 'pending');
+                pendingTutors = allTutors.filter(
+                    (tutor: any) => tutor.verificationStatus === 'pending'
+                );
             }
         } catch (err) {
             console.error('Load pending tutors error:', err);
@@ -336,6 +381,233 @@
             alert('Failed to reject tutor');
         } finally {
             approvalLoading[tid] = false;
+        }
+    }
+
+    // ---- STUDENT SESSION / BOOKING LOGIC (mirrors student dashboard) ----
+    function hasTimeConflict(day: string, time: number): boolean {
+        return studentUpcomingSessions.some((session) => session.day === day && session.time === time);
+    }
+
+    function openBooking(tutorId: number) {
+        bookingStates[tutorId] = {
+            isOpen: true,
+            selectedCourse: null,
+            selectedDay: 'Monday',
+            selectedTime: 14,
+            selectedLocation: 'Zoom',
+            isSubmitting: false,
+            error: '',
+            success: ''
+        };
+    }
+
+    function closeBooking(tutorId: number) {
+        if (bookingStates[tutorId]) {
+            bookingStates[tutorId].isOpen = false;
+        }
+    }
+
+    async function confirmBooking(tutorId: number) {
+        const state = bookingStates[tutorId];
+        if (!state || !user) return;
+
+        state.error = '';
+        state.success = '';
+
+        if (!state.selectedCourse) {
+            state.error = 'Please select a course';
+            return;
+        }
+
+        if (hasTimeConflict(state.selectedDay, state.selectedTime)) {
+            state.error = `You already have a session on ${state.selectedDay} at ${formatTime(
+                state.selectedTime
+            )}`;
+            return;
+        }
+
+        state.isSubmitting = true;
+
+        try {
+            await createSession({
+                uid: user.uid,
+                tid: tutorId,
+                tagsID: state.selectedCourse,
+                day: state.selectedDay,
+                time: state.selectedTime,
+                location: state.selectedLocation
+            });
+
+            state.success = 'Session booked successfully!';
+            await loadStudentSessions();
+
+            setTimeout(() => {
+                closeBooking(tutorId);
+            }, 1500);
+        } catch (err: any) {
+            state.error = err?.message || 'Failed to book session';
+        } finally {
+            state.isSubmitting = false;
+        }
+    }
+
+    async function cancelStudentSessionById(sid: number) {
+        try {
+            const res = await authFetch(`/api/sessions/${sid}`, {
+                method: 'DELETE'
+            });
+
+            if (!res.ok) {
+                const body = await res.json().catch(() => null);
+                console.error('Failed to cancel session', body || res.statusText);
+                return;
+            }
+
+            await loadStudentSessions();
+        } catch (err) {
+            console.error('Cancel session error:', err);
+        }
+    }
+
+    function confirmCancelStudentSession(session: Session) {
+        const message = `Are you sure you want to cancel your ${session.course} session with ${session.tutor.name} on ${session.day} at ${formatTime(session.time)}?`;
+        if (confirm(message)) {
+            cancelStudentSessionById((session as any).sid);
+        }
+    }
+
+    async function loadTutorCourses(tid: number) {
+        tutorCoursesLoading[tid] = true;
+        tutorCoursesError[tid] = false;
+
+        try {
+            const res = await authFetch(`/api/tutors/${tid}/tags`);
+            if (res.ok) {
+                tutorCourses[tid] = await res.json();
+                tutorCoursesError[tid] = false;
+            } else {
+                tutorCourses[tid] = [];
+                tutorCoursesError[tid] = true;
+            }
+        } catch (err) {
+            tutorCourses[tid] = [];
+            tutorCoursesError[tid] = true;
+        } finally {
+            tutorCoursesLoading[tid] = false;
+        }
+    }
+
+    async function startSession(sid: number) {
+        sessionActionLoading[sid] = true;
+        try {
+            await authFetch(`/api/sessions/${sid}/start`, { method: 'PUT' });
+            await loadStudentSessions();
+        } catch (err) {
+            alert('Failed to start');
+        } finally {
+            sessionActionLoading[sid] = false;
+        }
+    }
+
+    async function endSession(sid: number) {
+        sessionActionLoading[sid] = true;
+        try {
+            await authFetch(`/api/sessions/${sid}/end`, { method: 'PUT' });
+            await loadStudentSessions();
+        } catch (err) {
+            alert('Failed to end');
+        } finally {
+            sessionActionLoading[sid] = false;
+        }
+    }
+
+    async function loadStudentSessions() {
+        if (!user) return;
+
+        try {
+            const sessionsRes = await authFetch(`/api/users/${user.uid}/sessions`);
+            if (sessionsRes.ok) {
+                const allSessions = await sessionsRes.json();
+                const now = new Date();
+
+                const rated: number[] = JSON.parse(localStorage.getItem('ratedSessions') || '[]');
+
+                studentUpcomingSessions = allSessions.filter(
+                    (s: Session) => !s.concluded || new Date(s.concluded) > now
+                );
+
+                studentPastSessions = allSessions
+                    .filter((s: Session) => s.concluded && new Date(s.concluded) <= now)
+                    .map((s: any) => (rated.includes(s.sid) ? { ...s, hasRated: true } : s));
+            }
+        } catch (err) {
+            console.error('Failed to load student sessions:', err);
+        }
+    }
+
+    function applyTagFilter(tagId: number | null) {
+        activeTagId = tagId;
+
+        if (tagId === null) {
+            filteredTutors = tutors;
+            return;
+        }
+
+        filteredTutors = tutors.filter((tutor) => {
+            const courseList = tutorCourses[tutor.tid] || tutor.tags || tutor.courses || [];
+            return courseList.some((tg: any) => tg.tagsID === tagId || tg.id === tagId);
+        });
+    }
+
+    function openReviewModal(session: Session) {
+        reviewSession = session;
+        reviewForm = { rating: 5, comment: '' };
+        showReviewModal = true;
+    }
+
+    async function submitReview() {
+        if (!reviewSession) return;
+
+        isReviewSubmitting = true;
+
+        try {
+            const sid = (reviewSession as any).sid;
+
+            const res = await authFetch(`/api/tutors/ratings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tid: reviewSession.tutor.tid,
+                    sid,
+                    rating: reviewForm.rating
+                })
+            });
+
+            const body = await res.json().catch(() => null);
+
+            if (!res.ok) {
+                alert(body?.detail || 'Failed to submit review. Please try again.');
+                return;
+            }
+
+            let rated = JSON.parse(localStorage.getItem('ratedSessions') || '[]');
+            if (!rated.includes(sid)) {
+                rated.push(sid);
+                localStorage.setItem('ratedSessions', JSON.stringify(rated));
+            }
+
+            showReviewModal = false;
+            await loadStudentSessions();
+
+            studentPastSessions = studentPastSessions.map((s: any) =>
+                s.sid === sid ? { ...s, hasRated: true } : s
+            );
+        } catch (err: any) {
+            console.error('Review error:', err);
+            alert('Failed to submit review. Please try again.');
+        } finally {
+            isReviewSubmitting = false;
         }
     }
 
@@ -424,16 +696,9 @@
             if (userRes.ok) {
                 profile = await userRes.json();
 
-                console.log('Profile data:', profile);
-                console.log('Profile type:', profile.type);
-                console.log('Profile Type (capital):', profile.Type);
-
                 if (profile.type === 'admin' || profile.Type === 'admin') {
-                    console.log('User is admin!');
                     isAdmin = true;
                     await loadPendingTutors();
-                } else {
-                    console.log('User is NOT admin');
                 }
 
                 editForm = {
@@ -452,7 +717,9 @@
                 await loadAvailability();
 
                 try {
-                    const sessionsRes = await authFetch(`/api/tutors/${tutorProfile.tid}/sessions`);
+                    const sessionsRes = await authFetch(
+                        `/api/tutors/${tutorProfile.tid}/sessions`
+                    );
                     if (sessionsRes.ok) {
                         const allSessions = await sessionsRes.json();
 
@@ -513,6 +780,30 @@
                 return;
             }
 
+            // Load tutors/tags & student sessions (so tutor can also act as student)
+            const tutorsRes = await authFetch('/api/tutors');
+            if (tutorsRes.ok) {
+                const allTutors = await tutorsRes.json();
+
+                // Optional: hide yourself from available tutors list
+                if (tutorProfile) {
+                    tutors = allTutors.filter((t: any) => t.tid !== tutorProfile.tid);
+                } else {
+                    tutors = allTutors;
+                }
+
+                filteredTutors = tutors;
+
+                for (const tutor of tutors) {
+                    tutorCourses[tutor.tid] = tutor.tags || [];
+                }
+            } else {
+                tutors = [];
+            }
+
+            tags = await getTags();
+            await loadStudentSessions();
+
             
         } catch (err: any) {
             console.error('Error loading tutor dashboard:', err);
@@ -564,9 +855,9 @@
                     Messages
                 </a>
                 <button
-                    onclick={handleLogout}
-                    disabled={isLoggingOut}
-                    class="rounded-lg bg-white px-4 py-2 text-sm font-medium text-[#231161] transition-colors hover:bg-purple-50 disabled:opacity-50"
+                        onclick={handleLogout}
+                        disabled={isLoggingOut}
+                        class="rounded-lg bg-white px-4 py-2 text-sm font-medium text-[#231161] transition-colors hover:bg-purple-50 disabled:opacity-50"
                 >
                     {isLoggingOut ? 'Logging out...' : 'Logout'}
                 </button>
@@ -631,16 +922,16 @@
 
                                 <div class="flex gap-2 border-t pt-3">
                                     <button
-                                        onclick={() => approveTutor(tutor.tid)}
-                                        disabled={approvalLoading[tutor.tid]}
-                                        class="flex-1 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                                            onclick={() => approveTutor(tutor.tid)}
+                                            disabled={approvalLoading[tutor.tid]}
+                                            class="flex-1 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
                                     >
                                         {approvalLoading[tutor.tid] ? '...' : '✅ Approve'}
                                     </button>
                                     <button
-                                        onclick={() => rejectTutor(tutor.tid)}
-                                        disabled={approvalLoading[tutor.tid]}
-                                        class="flex-1 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                                            onclick={() => rejectTutor(tutor.tid)}
+                                            disabled={approvalLoading[tutor.tid]}
+                                            class="flex-1 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
                                     >
                                         {approvalLoading[tutor.tid] ? '...' : '❌ Reject'}
                                     </button>
@@ -683,8 +974,8 @@
                 <div class="mb-4 flex items-center justify-between">
                     <h2 class="text-xl font-bold text-gray-800">Your Tutor Profile</h2>
                     <button
-                        onclick={openEditProfile}
-                        class="rounded-lg bg-[#231161] px-4 py-2 text-sm text-white hover:bg-[#1a0d4a]"
+                            onclick={openEditProfile}
+                            class="rounded-lg bg-[#231161] px-4 py-2 text-sm text-white hover:bg-[#1a0d4a]"
                     >
                         Edit Profile
                     </button>
@@ -693,13 +984,13 @@
                     <div class="mb-6 flex items-start gap-6">
                         {#if profile.profilePicture}
                             <img
-                                src={profile.profilePicture}
-                                alt="{profile.firstName} {profile.lastName}"
-                                class="h-24 w-24 rounded-full border-2 border-[#231161] object-cover"
+                                    src={profile.profilePicture}
+                                    alt="{profile.firstName} {profile.lastName}"
+                                    class="h-24 w-24 rounded-full border-2 border-[#231161] object-cover"
                             />
                         {:else}
                             <div
-                                class="flex h-24 w-24 items-center justify-center rounded-full border-2 border-[#231161] bg-purple-100"
+                                    class="flex h-24 w-24 items-center justify-center rounded-full border-2 border-[#231161] bg-purple-100"
                             >
                                 <span class="text-3xl font-bold text-[#231161]">
                                     {profile.firstName?.[0]}{profile.lastName?.[0]}
@@ -719,10 +1010,10 @@
                             <div>
                                 <p class="text-sm text-gray-600">Status</p>
                                 <span
-                                    class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium
+                                        class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium
                                         {tutorProfile.status === 'available'
-                                        ? 'bg-green-100 text-green-800'
-                                        : 'bg-gray-100 text-gray-800'}"
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-gray-100 text-gray-800'}"
                                 >
                                     {tutorProfile.status || 'available'}
                                 </span>
@@ -732,10 +1023,10 @@
                             <div>
                                 <p class="text-sm text-gray-600">Verification Status</p>
                                 <span
-                                    class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium
+                                        class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium
                                         {tutorProfile.verificationStatus === 'approved'
-                                        ? 'bg-blue-100 text-blue-800'
-                                        : 'bg-yellow-100 text-yellow-800'}"
+                                            ? 'bg-blue-100 text-blue-800'
+                                            : 'bg-yellow-100 text-yellow-800'}"
                                 >
                                     {tutorProfile.verificationStatus || 'pending'}
                                 </span>
@@ -771,12 +1062,12 @@
                         </p>
                     </div>
                     <button
-                        onclick={() => {
+                            onclick={() => {
                             showAddAvailability = true;
                             availabilityError = '';
                             availabilitySuccess = '';
                         }}
-                        class="rounded-lg bg-[#231161] px-4 py-2 text-sm text-white hover:bg-[#1a0d4a]"
+                            class="rounded-lg bg-[#231161] px-4 py-2 text-sm text-white hover:bg-[#1a0d4a]"
                     >
                         + Add Time Slot
                     </button>
@@ -803,19 +1094,21 @@
                                     <div class="flex flex-wrap gap-2">
                                         {#each daySlots as slot}
                                             <div
-                                                class="flex items-center gap-2 rounded-lg bg-green-100 px-3 py-2 text-sm"
+                                                    class="flex items-center gap-2 rounded-lg bg-green-100 px-3 py-2 text-sm"
                                             >
                                                 <span class="text-green-800">
                                                     {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
                                                 </span>
                                                 <button
-                                                    onclick={() => handleDeleteSlot(slot)}
-                                                    disabled={deletingSlotId === slot.availabilityID}
-                                                    class="text-red-500 hover:text-red-700 disabled:opacity-50"
-                                                    title="Remove slot"
+                                                        onclick={() => handleDeleteSlot(slot)}
+                                                        disabled={deletingSlotId === slot.availabilityID}
+                                                        class="text-red-500 hover:text-red-700 disabled:opacity-50"
+                                                        title="Remove slot"
                                                 >
                                                     {#if deletingSlotId === slot.availabilityID}
-                                                        <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent"></span>
+                                                        <span
+                                                                class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent"
+                                                        ></span>
                                                     {:else}
                                                         ✕
                                                     {/if}
@@ -984,6 +1277,352 @@
                     </div>
                 </section>
             {/if}
+
+            <!-- ADDED: Student-style sections so tutors can also act as students -->
+
+            {#if studentUpcomingSessions.length > 0}
+                <section class="rounded-lg bg-white p-6 shadow">
+                    <h2 class="mb-4 text-xl font-bold text-gray-800">
+                        Your Upcoming Sessions (as Student)
+                    </h2>
+                    <div class="space-y-3">
+                        {#each studentUpcomingSessions as session}
+                            {@const sid = (session as any).sid}
+                            {@const hasStarted = (session as any).started}
+                            {@const hasEnded = (session as any).concluded}
+
+                            <div class="rounded-lg border border-purple-200 bg-purple-50 p-4">
+                                <div class="mb-2 flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                                class="rounded bg-purple-600 px-2 py-1 text-xs font-semibold text-white"
+                                        >Upcoming</span
+                                        >
+                                        <span class="text-sm font-medium text-gray-700">
+                                            {session.course}
+                                        </span>
+
+                                        {#if hasStarted && !hasEnded}
+                                            <span
+                                                    class="rounded bg-green-600 px-2 py-1 text-xs font-semibold text-white"
+                                            >
+                                                In Progress
+                                            </span>
+                                        {:else if hasEnded}
+                                            <span
+                                                    class="rounded bg-gray-500 px-2 py-1 text-xs font-semibold text-white"
+                                            >
+                                                Ended
+                                            </span>
+                                        {/if}
+                                    </div>
+                                    <button
+                                            type="button"
+                                            class="rounded bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-700"
+                                            onclick={() => confirmCancelStudentSession(session)}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <p class="text-gray-600">Tutor</p>
+                                        <p class="font-semibold text-gray-800">
+                                            {session.tutor.name}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-600">Schedule</p>
+                                        <p class="font-semibold text-gray-800">
+                                            {session.day} at {formatTime(session.time)}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-600">Location</p>
+                                        <p class="font-semibold text-gray-800">
+                                            {getSessionLocation(session)}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3 flex gap-2 border-t pt-3">
+                                    {#if !hasStarted}
+                                        <button
+                                                onclick={() => startSession(sid)}
+                                                disabled={sessionActionLoading[sid]}
+                                                class="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                                        >
+                                            {sessionActionLoading[sid] ? 'Starting...' : '▶️ Start Session'}
+                                        </button>
+                                    {:else if hasStarted && !hasEnded}
+                                        <button
+                                                onclick={() => endSession(sid)}
+                                                disabled={sessionActionLoading[sid]}
+                                                class="flex-1 rounded-lg bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50"
+                                        >
+                                            {sessionActionLoading[sid] ? 'Ending...' : '⏹️ End Session'}
+                                        </button>
+                                    {:else}
+                                        <div
+                                                class="flex-1 rounded-lg bg-gray-300 px-4 py-2 text-center text-sm text-gray-600"
+                                        >
+                                            ✅ Session Completed
+                                        </div>
+                                    {/if}
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                </section>
+            {/if}
+
+            {#if studentPastSessions.length > 0}
+                <section class="rounded-lg bg-white p-6 shadow">
+                    <h2 class="mb-4 text-xl font-bold text-gray-800">
+                        Your Past Sessions (as Student)
+                    </h2>
+                    <div class="space-y-3">
+                        {#each studentPastSessions as session}
+                            <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                                <div class="mb-2 flex items-center gap-2">
+                                    <span class="rounded bg-gray-500 px-2 py-1 text-xs font-semibold text-white">
+                                        Completed
+                                    </span>
+                                    <span class="text-sm font-medium text-gray-700">
+                                        {session.course}
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <p class="text-gray-600">Tutor</p>
+                                        <p class="font-semibold text-gray-800">
+                                            {session.tutor.name}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-600">Completed</p>
+                                        <p class="font-semibold text-gray-800">
+                                            {formatDate(session.concluded)}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="mt-3 border-t pt-3">
+                                    {#if !(session as any).hasRated}
+                                        <button
+                                                onclick={() => openReviewModal(session)}
+                                                class="rounded bg-yellow-600 px-4 py-2 text-sm text-white hover:bg-yellow-700"
+                                        >
+                                            Rate Tutor
+                                        </button>
+                                    {:else}
+                                        <p class="text-sm text-green-700">
+                                            Thank you for rating this tutor!
+                                        </p>
+                                    {/if}
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                </section>
+            {/if}
+
+            <section class="rounded-lg bg-white p-6 shadow">
+                <div class="mb-4 flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-gray-800">Available Tutors (Book as Student)</h2>
+                </div>
+
+                {#if tags.length > 0}
+                    <div class="mb-4">
+                        <p class="mb-2 text-xs text-gray-600">Filter by course / tag:</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button
+                                    type="button"
+                                    class="rounded-full border px-3 py-1 text-xs font-medium
+                                    {activeTagId === null
+                                        ? 'border-[#231161] bg-[#231161] text-white'
+                                        : 'border-gray-300 bg-white text-gray-700'}"
+                                    onclick={() => applyTagFilter(null)}
+                            >
+                                All
+                            </button>
+
+                            {#each tags as tag}
+                                <button
+                                        type="button"
+                                        class="rounded-full border px-3 py-1 text-xs font-medium
+                                        {activeTagId === (tag.tagsID ?? tag.id)
+                                            ? 'border-[#231161] bg-[#231161] text-white'
+                                            : 'border-gray-300 bg-white text-gray-700'}"
+                                        onclick={() => applyTagFilter(tag.tagsID ?? tag.id)}
+                                >
+                                    {tag.tags ?? tag.name}
+                                </button>
+                            {/each}
+                        </div>
+                    </div>
+                {/if}
+
+                {#if (filteredTutors ?? tutors).length > 0}
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {#each filteredTutors ?? tutors as tutor}
+                            <div class="rounded-lg border border-gray-200 p-4">
+                                <div class="mb-3">
+                                    <p class="font-semibold text-gray-800">{tutor.name}</p>
+                                    <div class="mt-1 flex items-center gap-1 text-sm text-yellow-600">
+                                        <span>⭐</span>
+                                        <span>{tutor.rating?.toFixed(1) || '0.0'}</span>
+                                    </div>
+
+                                    {#if tutorCoursesLoading[tutor.tid]}
+                                        <p class="mt-2 text-xs text-gray-500">Loading courses...</p>
+                                    {:else if tutorCoursesError[tutor.tid]}
+                                        <p class="mt-2 text-xs text-red-600">⚠️ Courses unavailable</p>
+                                    {:else if tutorCourses[tutor.tid] && tutorCourses[tutor.tid].length > 0}
+                                        <div class="mt-2">
+                                            <p class="mb-1 text-xs text-gray-600">Teaches:</p>
+                                            <div class="flex flex-wrap gap-1">
+                                                {#each tutorCourses[tutor.tid] as course}
+                                                    <span
+                                                            class="rounded bg-purple-100 px-2 py-1 text-xs text-purple-800"
+                                                    >
+                                                        {course.name}
+                                                    </span>
+                                                {/each}
+                                            </div>
+                                        </div>
+                                    {/if}
+                                </div>
+
+                                {#if tutorCoursesError[tutor.tid]}
+                                    <button
+                                            disabled
+                                            class="w-full cursor-not-allowed rounded-lg bg-gray-300 px-4 py-2 text-sm text-gray-500"
+                                    >
+                                        Booking Unavailable
+                                    </button>
+                                {:else if !bookingStates[tutor.tid]?.isOpen}
+                                    <button
+                                            onclick={() => openBooking(tutor.tid)}
+                                            class="w-full rounded-lg bg-[#231161] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a0d4a]"
+                                    >
+                                        Book Session
+                                    </button>
+                                {:else}
+                                    <div class="space-y-3">
+                                        <div>
+                                            <label
+                                                    class="mb-1 block text-xs text-gray-600"
+                                                    for={`course-${tutor.tid}`}
+                                            >Course</label
+                                            >
+                                            <select
+                                                    id={`course-${tutor.tid}`}
+                                                    bind:value={bookingStates[tutor.tid].selectedCourse}
+                                                    class="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                                            >
+                                                <option value={null}>Select course</option>
+                                                {#each tutorCourses[tutor.tid] || [] as course}
+                                                    <option value={course.id}>
+                                                        {course.name}
+                                                    </option>
+                                                {/each}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label
+                                                    class="mb-1 block text-xs text-gray-600"
+                                                    for={`day-${tutor.tid}`}
+                                            >Day</label
+                                            >
+                                            <select
+                                                    id={`day-${tutor.tid}`}
+                                                    bind:value={bookingStates[tutor.tid].selectedDay}
+                                                    class="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                                            >
+                                                <option>Monday</option>
+                                                <option>Tuesday</option>
+                                                <option>Wednesday</option>
+                                                <option>Thursday</option>
+                                                <option>Friday</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label
+                                                    class="mb-1 block text-xs text-gray-600"
+                                                    for={`time-${tutor.tid}`}
+                                            >Time</label
+                                            >
+                                            <select
+                                                    id={`time-${tutor.tid}`}
+                                                    bind:value={bookingStates[tutor.tid].selectedTime}
+                                                    class="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                                            >
+                                                {#each Array(9) as _, i}
+                                                    <option value={9 + i}>
+                                                        {formatTime(9 + i)}
+                                                    </option>
+                                                {/each}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label
+                                                    class="mb-1 block text-xs text-gray-600"
+                                                    for={`location-${tutor.tid}`}
+                                            >Location</label
+                                            >
+                                            <select
+                                                    id={`location-${tutor.tid}`}
+                                                    bind:value={bookingStates[tutor.tid].selectedLocation}
+                                                    class="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                                            >
+                                                {#each SESSION_LOCATIONS as loc}
+                                                    <option value={loc}>{loc}</option>
+                                                {/each}
+                                            </select>
+                                        </div>
+
+                                        {#if bookingStates[tutor.tid].error}
+                                            <p class="text-xs text-red-600">
+                                                {bookingStates[tutor.tid].error}
+                                            </p>
+                                        {/if}
+
+                                        {#if bookingStates[tutor.tid].success}
+                                            <p class="text-xs text-green-600">
+                                                {bookingStates[tutor.tid].success}
+                                            </p>
+                                        {/if}
+
+                                        <div class="flex gap-2">
+                                            <button
+                                                    onclick={() => closeBooking(tutor.tid)}
+                                                    disabled={bookingStates[tutor.tid].isSubmitting}
+                                                    class="flex-1 rounded bg-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                    onclick={() => confirmBooking(tutor.tid)}
+                                                    disabled={bookingStates[tutor.tid].isSubmitting}
+                                                    class="flex-1 rounded bg-[#231161] px-3 py-2 text-sm text-white hover:bg-[#1a0d4a] disabled:opacity-50"
+                                            >
+                                                {bookingStates[tutor.tid].isSubmitting
+                                                    ? 'Booking...'
+                                                    : 'Confirm'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                {/if}
+                            </div>
+                        {/each}
+                    </div>
+                {:else}
+                    <p class="py-8 text-center text-gray-500">No tutors available at the moment.</p>
+                {/if}
+            </section>
         {/if}
     </main>
 </div>
@@ -1002,21 +1641,21 @@
                     {#if editForm.profilePicture}
                         <div class="mb-3">
                             <img
-                                src={editForm.profilePicture}
-                                alt="Current profile"
-                                class="h-24 w-24 rounded-full border-2 border-gray-200 object-cover"
+                                    src={editForm.profilePicture}
+                                    alt="Current profile"
+                                    class="h-24 w-24 rounded-full border-2 border-gray-200 object-cover"
                             />
                         </div>
                     {/if}
                     <input
-                        type="file"
-                        accept="image/*"
-                        disabled={uploadingPhoto || isEditSubmitting}
-                        onchange={async (e) => {
+                            type="file"
+                            accept="image/*"
+                            disabled={uploadingPhoto || isEditSubmitting}
+                            onchange={async (e) => {
                             const file = e.currentTarget.files?.[0];
                             if (file) await handleProfilePhotoUpload(file);
                         }}
-                        class="block w-full text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-[#231161] file:px-4 file:py-2 file:text-white hover:file:bg-[#2d1982] disabled:file:bg-gray-400"
+                            class="block w-full text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-[#231161] file:px-4 file:py-2 file:text-white hover:file:bg-[#2d1982] disabled:file:bg-gray-400"
                     />
                     {#if uploadingPhoto}
                         <p class="mt-2 text-sm text-gray-600">Uploading...</p>
@@ -1025,36 +1664,36 @@
 
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700" for="tutor-first-name"
-                        >First Name</label
+                    >First Name</label
                     >
                     <input
-                        id="tutor-first-name"
-                        type="text"
-                        bind:value={editForm.firstName}
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2"
+                            id="tutor-first-name"
+                            type="text"
+                            bind:value={editForm.firstName}
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2"
                     />
                 </div>
 
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700" for="tutor-last-name"
-                        >Last Name</label
+                    >Last Name</label
                     >
                     <input
-                        id="tutor-last-name"
-                        type="text"
-                        bind:value={editForm.lastName}
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2"
+                            id="tutor-last-name"
+                            type="text"
+                            bind:value={editForm.lastName}
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2"
                     />
                 </div>
 
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700" for="tutor-bio">Bio</label>
                     <textarea
-                        id="tutor-bio"
-                        bind:value={editForm.bio}
-                        rows="4"
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2"
-                        placeholder="Tell students about yourself..."
+                            id="tutor-bio"
+                            bind:value={editForm.bio}
+                            rows="4"
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2"
+                            placeholder="Tell students about yourself..."
                     ></textarea>
                 </div>
 
@@ -1068,16 +1707,16 @@
 
                 <div class="flex gap-3 pt-4">
                     <button
-                        onclick={() => (showEditProfile = false)}
-                        disabled={isEditSubmitting}
-                        class="flex-1 rounded-lg bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                            onclick={() => (showEditProfile = false)}
+                            disabled={isEditSubmitting}
+                            class="flex-1 rounded-lg bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
                     >
                         Cancel
                     </button>
                     <button
-                        onclick={handleEditProfile}
-                        disabled={isEditSubmitting}
-                        class="flex-1 rounded-lg bg-[#231161] px-4 py-2 text-white hover:bg-[#1a0d4a] disabled:opacity-50"
+                            onclick={handleEditProfile}
+                            disabled={isEditSubmitting}
+                            class="flex-1 rounded-lg bg-[#231161] px-4 py-2 text-white hover:bg-[#1a0d4a] disabled:opacity-50"
                     >
                         {isEditSubmitting ? 'Saving...' : 'Save Changes'}
                     </button>
@@ -1097,9 +1736,9 @@
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700" for="avail-day">Day</label>
                     <select
-                        id="avail-day"
-                        bind:value={newSlot.day}
-                        class="w-full rounded-lg border border-gray-300 px-3 py-2"
+                            id="avail-day"
+                            bind:value={newSlot.day}
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2"
                     >
                         {#each daysOfWeek as day}
                             <option value={day}>{day}</option>
@@ -1110,12 +1749,12 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="mb-1 block text-sm font-medium text-gray-700" for="avail-start"
-                            >Start Time</label
+                        >Start Time</label
                         >
                         <select
-                            id="avail-start"
-                            bind:value={newSlot.startTime}
-                            class="w-full rounded-lg border border-gray-300 px-3 py-2"
+                                id="avail-start"
+                                bind:value={newSlot.startTime}
+                                class="w-full rounded-lg border border-gray-300 px-3 py-2"
                         >
                             {#each hours as hour}
                                 <option value={hour}>{formatTime(hour)}</option>
@@ -1125,12 +1764,12 @@
 
                     <div>
                         <label class="mb-1 block text-sm font-medium text-gray-700" for="avail-end"
-                            >End Time</label
+                        >End Time</label
                         >
                         <select
-                            id="avail-end"
-                            bind:value={newSlot.endTime}
-                            class="w-full rounded-lg border border-gray-300 px-3 py-2"
+                                id="avail-end"
+                                bind:value={newSlot.endTime}
+                                class="w-full rounded-lg border border-gray-300 px-3 py-2"
                         >
                             {#each hours as hour}
                                 {#if hour > newSlot.startTime}
@@ -1158,18 +1797,116 @@
 
                 <div class="flex gap-3 pt-4">
                     <button
-                        onclick={() => (showAddAvailability = false)}
-                        disabled={isAddingSlot}
-                        class="flex-1 rounded-lg bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                            onclick={() => (showAddAvailability = false)}
+                            disabled={isAddingSlot}
+                            class="flex-1 rounded-lg bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
                     >
                         Cancel
                     </button>
                     <button
-                        onclick={handleAddSlot}
-                        disabled={isAddingSlot || newSlot.startTime >= newSlot.endTime}
-                        class="flex-1 rounded-lg bg-[#231161] px-4 py-2 text-white hover:bg-[#1a0d4a] disabled:opacity-50"
+                            onclick={handleAddSlot}
+                            disabled={isAddingSlot || newSlot.startTime >= newSlot.endTime}
+                            class="flex-1 rounded-lg bg-[#231161] px-4 py-2 text-white hover:bg-[#1a0d4a] disabled:opacity-50"
                     >
                         {isAddingSlot ? 'Adding...' : 'Add Slot'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{/if}
+
+{#if showReviewModal && reviewSession}
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="w-full max-w-md rounded-lg bg-white p-6">
+            <h3 class="mb-4 text-xl font-bold text-gray-800">Rate Your Tutor</h3>
+            <p class="mb-4 text-sm text-gray-600">
+                How was your session with {reviewSession.tutor.name}?
+            </p>
+
+            <div class="space-y-4">
+                <div>
+                    <label for="review-rating" class="mb-2 block text-sm font-medium text-gray-700">
+                        Rating
+                    </label>
+                    <div class="flex gap-2">
+                        {#each [1, 2, 3, 4, 5] as star}
+                            <button
+                                    type="button"
+                                    onclick={() => (reviewForm.rating = star)}
+                                    class="text-3xl {star <= reviewForm.rating ? 'text-yellow-500' : 'text-gray-300'}"
+                            >
+                                ★
+                            </button>
+                        {/each}
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button
+                            type="button"
+                            onclick={() => (showReviewModal = false)}
+                            disabled={isReviewSubmitting}
+                            class="flex-1 rounded-lg bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                            type="button"
+                            onclick={submitReview}
+                            disabled={isReviewSubmitting}
+                            class="flex-1 rounded-lg bg-yellow-600 px-4 py-2 text-white hover:bg-yellow-700 disabled:opacity-50"
+                    >
+                        {isReviewSubmitting ? 'Submitting...' : 'Submit Review'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+{/if}
+
+{#if showReviewModal && reviewSession}
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="w-full max-w-md rounded-lg bg-white p-6">
+            <h3 class="mb-4 text-xl font-bold text-gray-800">Rate Your Tutor</h3>
+            <p class="mb-4 text-sm text-gray-600">
+                How was your session with {reviewSession.tutor.name}?
+            </p>
+
+            <div class="space-y-4">
+                <div>
+                    <label for="review-rating" class="mb-2 block text-sm font-medium text-gray-700">
+                        Rating
+                    </label>
+                    <div class="flex gap-2">
+                        {#each [1, 2, 3, 4, 5] as star}
+                            <button
+                                    type="button"
+                                    onclick={() => (reviewForm.rating = star)}
+                                    class="text-3xl {star <= reviewForm.rating ? 'text-yellow-500' : 'text-gray-300'}"
+                            >
+                                ★
+                            </button>
+                        {/each}
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button
+                            type="button"
+                            onclick={() => (showReviewModal = false)}
+                            disabled={isReviewSubmitting}
+                            class="flex-1 rounded-lg bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                            type="button"
+                            onclick={submitReview}
+                            disabled={isReviewSubmitting}
+                            class="flex-1 rounded-lg bg-yellow-600 px-4 py-2 text-white hover:bg-yellow-700 disabled:opacity-50"
+                    >
+                        {isReviewSubmitting ? 'Submitting...' : 'Submit Review'}
                     </button>
                 </div>
             </div>
