@@ -121,7 +121,7 @@
     let postError = $state('');
     let postSuccess = $state('');
     
-    let tags = $state<any>([]);
+    let tutorTags = $state<any>([]);
     let postForm = $state<Omit<CreatePostPayload, 'tid'>>({
         tagsID: 0, 
         content: ''
@@ -616,8 +616,8 @@
         postError = '';
         postSuccess = '';
         postForm.content = '';
-        if (tags.expertise.length > 0 && postForm.tagsID === 0) {
-            postForm.tagsID = tags.expertise[0].id;
+        if (tutorTags.expertise.length > 0 && postForm.tagsID === 0) {
+            postForm.tagsID = tutorTags.expertise[0].id;
         }
     }
 
@@ -769,8 +769,8 @@
                     const tagRes = await authFetch(`/api/tutors/${tutorProfile.tid}`);
                     if (tagRes.ok) {
                         const tagData = await tagRes.json();
-                        tags = tagData as Tags[];
-                        console.log('Tutor expertise:', tags);
+                        tutorTags = tagData as Tags[];
+                        console.log('Tutor expertise:', tutorTags);
                     }
                 } catch (error) {
                     console.warn('Could not load tutor tags:', error);
@@ -1162,7 +1162,7 @@
                                 <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-md">
                                     <div class="flex justify-between items-start mb-2">
                                         <span class="text-sm px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 font-medium">
-                                            {tags.expertise.find((t: { id: number; }) => t.id === post.tagsID)?.name}
+                                            {tutorTags.expertise.find((t: { id: number; }) => t.id === post.tagsID)?.name}
                                         </span>
                                         
                                         {#if post.timestamp}
@@ -1932,7 +1932,7 @@
                         class="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-700 focus:border-[#231161] focus:ring-[#231161]"
                         disabled={isLoadingTags || isPostSubmitting}
                     >
-                        {#each tags.expertise as tag}
+                        {#each tutorTags.expertise as tag}
                             <option value={tag.id}>{tag.name}</option>
                         {/each}
                     </select>
