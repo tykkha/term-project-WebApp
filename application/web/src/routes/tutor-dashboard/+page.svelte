@@ -12,9 +12,19 @@
         deleteAvailabilitySlot,
         type User,
         type Session,
-        type AvailabilitySlot
+        type AvailabilitySlot,
+        createPost,
+        getPosts,
+        deletePost,
+		type Post,
+        type CreatePostPayload,
+        type Tag
     } from '$lib/api';
     import ImageUpload from '$lib/components/ImageUpload.svelte';
+
+    interface Tags {
+        expertise: Tag[];
+    }
 
     let user = $state<User | null>(getCurrentUser());
     let profile = $state<any>(null);
@@ -61,6 +71,22 @@
 
     const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const hours = Array.from({ length: 15 }, (_, i) => i + 8); // 8 AM to 10 PM
+
+    // Tutor Post variables
+    let tutorPosts = $state([] as Post[]); 
+    let isLoadingPosts = $state(false);
+    let showPostForm = $state(false);
+    let isLoadingTags = $state(false);
+
+    let isPostSubmitting = $state(false);
+    let postError = $state('');
+    let postSuccess = $state('');
+    
+    let tags = $state<any>([]);
+    let postForm = $state<Omit<CreatePostPayload, 'tid'>>({
+        tagsID: 0, 
+        content: ''
+    });
 
     async function handleLogout() {
         isLoggingOut = true;
@@ -313,6 +339,77 @@
         }
     }
 
+    function openPostForm() {
+        showPostForm = true;
+        postError = '';
+        postSuccess = '';
+        postForm.content = '';
+        if (tags.expertise.length > 0 && postForm.tagsID === 0) {
+            postForm.tagsID = tags.expertise[0].id;
+        }
+    }
+
+    function closePostForm() {
+        showPostForm = false;
+    }
+
+    async function loadTutorPosts() {
+        try {
+            const posts = await getPosts(tutorProfile.tid);
+            tutorPosts = posts;
+            console.log('Tutor Posts Data:', tutorPosts);
+        } catch (error) {
+            console.error('Failed to load tutor posts:', error);
+        }
+    }
+
+       async function handleDeletePost(pid: number) {
+        if (!confirm('Are you sure you want to delete this post?')) {
+            return;
+        }
+
+        try {
+            await deletePost(pid);
+            // Immediately update the list
+            tutorPosts = tutorPosts.filter(post => post.pid !== pid);
+            alert('Post deleted successfully!');
+        } catch (err) {
+            console.error('Failed to delete post:', err);
+            alert('Failed to delete post. Please try again.');
+        }
+    }
+
+    async function handlePostForm() {
+        if (!postForm.content.trim() || postForm.tagsID === 0) {
+            errorMessage = 'Please select a course and enter content.';
+            return;
+        }
+
+        isPostSubmitting = true;
+        postError = '';
+        postSuccess = '';
+
+        try {
+            const payload: CreatePostPayload = {
+                tid: tutorProfile.tid,
+                tagsID: postForm.tagsID,
+                content: postForm.content.trim()
+            };
+            await createPost(payload);
+
+            await loadTutorPosts(); 
+            postSuccess = 'Post created successfully!';
+            setTimeout(() => {
+                closePostForm();
+            }, 1500);
+
+        } catch (err: any) {
+            errorMessage = err.message || 'An unexpected error occurred during posting.';
+        } finally {
+            isPostSubmitting = false;
+        }
+    }
+
     async function loadTutorData() {
         if (!user) {
             goto('/login');
@@ -396,10 +493,27 @@
                 } catch (err) {
                     console.warn('Could not load sessions:', err);
                 }
+
+
+                // Load tutor posts 
+                await loadTutorPosts();
+                try {
+                    // Loads tutor's expertises
+                    const tagRes = await authFetch(`/api/tutors/${tutorProfile.tid}`);
+                    if (tagRes.ok) {
+                        const tagData = await tagRes.json();
+                        tags = tagData as Tags[];
+                        console.log('Tutor expertise:', tags);
+                    }
+                } catch (error) {
+                    console.warn('Could not load tutor tags:', error);
+                }
             } else {
                 goto('/student-dashboard');
                 return;
             }
+
+            
         } catch (err: any) {
             console.error('Error loading tutor dashboard:', err);
             errorMessage = 'Failed to load dashboard data';
@@ -719,6 +833,70 @@
                     </div>
                 {/if}
             </section>
+            
+            <!-- Tutor Post Section -->
+            <section class="rounded-lg bg-white p-6 shadow">
+                <div class="mb-4 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">Your Posts</h2>
+                        <p class="text-sm text-gray-600">
+                            Manage your posts to engage with students
+                        </p>
+                    </div>
+                    <button
+                        onclick={openPostForm}
+                        class="rounded-lg bg-[#231161] px-4 py-2 text-sm text-white hover:bg-[#1a0d4a]"
+                    >
+                        + Add New Post
+                    </button>
+                </div>
+
+                {#if isLoadingPosts}
+                    <div class="py-8 text-center">
+                        <p class="text-gray-500">Loading Posts...</p>
+                    </div>
+                {:else if tutorPosts.length === 0}
+                    <div class="rounded-lg border-2 border-dashed border-gray-300 py-12 text-center">
+                        <p class="mb-2 text-gray-500">No posts set yet</p>
+                        <p class="text-sm text-gray-400">
+                            Add Posts to share updates with students
+                        </p>
+                    </div>
+                {:else}
+                    <div class="space-y-4">
+                        {#if tutorPosts.length > 0}
+                            {#each tutorPosts as post (post.pid)}
+                                <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-md">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="text-sm px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 font-medium">
+                                            {tags.expertise.find((t: { id: number; }) => t.id === post.tagsID)?.name}
+                                        </span>
+                                        
+                                        {#if post.timestamp}
+                                            <span class="text-xs text-gray-500">
+                                                Posted: {new Date(post.timestamp).toLocaleDateString()}
+                                            </span>
+                                        {/if}
+                                    </div>
+
+                                    <p class="text-gray-800 whitespace-pre-wrap">
+                                        {post.content}
+                                    </p>
+
+                                    <div class="mt-3 flex justify-end">
+                                        <button
+                                            onclick={() => handleDeletePost(post.pid)}
+                                            class="text-xs text-red-600 hover:text-red-800 transition-colors"
+                                        >
+                                            Delete Post
+                                        </button>
+                                    </div>
+                                </div>
+                            {/each}
+                        {/if}
+                    </div>
+                {/if}
+            </section>
 
             <section class="rounded-lg bg-white p-6 shadow">
                 <h2 class="mb-4 text-xl font-bold text-gray-800">Upcoming Sessions</h2>
@@ -995,6 +1173,73 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+{/if}
+
+{#if showPostForm}
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
+            <div class="mb-4 flex items-center justify-between border-b pb-3">
+                <h3 class="text-xl font-bold text-gray-800">Create New Tutor Post</h3>
+            </div>
+
+            <form onsubmit={handlePostForm} class="space-y-4">
+                <div>
+                    <label for="post-course" class="mb-1 block text-sm font-medium text-gray-700"
+                        >Select Course</label
+                    >
+                    <select
+                        id="post-course"
+                        bind:value={postForm.tagsID}
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-700 focus:border-[#231161] focus:ring-[#231161]"
+                        disabled={isLoadingTags || isPostSubmitting}
+                    >
+                        {#each tags.expertise as tag}
+                            <option value={tag.id}>{tag.name}</option>
+                        {/each}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="post-content" class="mb-1 block text-sm font-medium text-gray-700"
+                        >Post Content</label
+                    >
+                    <textarea
+                        id="post-content"
+                        bind:value={postForm.content}
+                        rows="4"
+                        placeholder="Give a brief description of your tutoring services, availability, or any special offers..."
+                        class="w-full rounded-lg border border-gray-300 p-3 text-gray-700 focus:border-[#231161] focus:ring-[#231161]"
+                        disabled={isPostSubmitting}
+                    ></textarea>
+                </div>
+
+                {#if postError}
+                    <p class="text-sm text-red-600">{postError}</p>
+                {/if}
+                {#if postSuccess}
+                    <p class="text-sm text-green-600">{postSuccess}</p>
+                {/if}
+
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button
+                        type="button"
+                        onclick={closePostForm}
+                        disabled={isPostSubmitting}
+                        class="rounded-lg bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300 disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={isPostSubmitting || postForm.tagsID === 0 || !postForm.content.trim()}
+                        class="rounded-lg bg-[#231161] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#1a0d4a] disabled:opacity-50"
+                    >
+                        {isPostSubmitting ? 'Posting...' : 'Post'}
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 {/if}
