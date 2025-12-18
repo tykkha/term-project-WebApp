@@ -72,12 +72,12 @@
         tid: tutorIdNum,
         uid: 0, // Will be set in loadCurrUserData
         sid: 0, // Session ID selected by user
-        rating: 0, 
+        rating: 1, 
     });
 
     // Helper to format session info for the dropdown
     function formatSession(session: Session): string {
-        const date = new Date(session.day).toLocaleDateString();
+        const date = session.day;
         const time = `${session.time}:00`; 
         return `${session.course} on ${date} at ${time}`;
     }
@@ -238,7 +238,7 @@
         showReviewForm = true;
         reviewErrorMessage = '';
         reviewSuccessMessage = '';
-        reviewForm.rating = 0;
+        reviewForm.rating = 1;
         reviewForm.sid = 0;
         loadReviewableSessions();
     }
@@ -295,7 +295,7 @@
 
         <!-- Left Column: Tutor Profile & Actions -->
         <div class="w-full p-4 md:w-5/12">
-            <div class="mb-8 w-full rounded-2xl bg-white drop-shadow-lg transition duration-300 hover:scale-[1.02] hover:drop-shadow-2xl">
+            <div class="mb-8 w-full min-h-64 rounded-2xl bg-white drop-shadow-lg transition duration-300 hover:scale-[1.02] hover:drop-shadow-2xl aspect-square">
                 <img src={profile.photo} alt="{profile.name} Profile Photo" class="w-full h-auto rounded-xl">
             </div>
 

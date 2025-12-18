@@ -573,7 +573,7 @@ export interface CreateReviewPayload {
 }
 
 export async function createReview(payload: CreateReviewPayload): Promise<Review> {
-	const res = await authFetch(`${API_BASE}/reviews`, {
+	const res = await authFetch(`${API_BASE}/tutors/ratings`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(payload)
