@@ -1,4 +1,5 @@
 <script>
+	import { base } from '$app/paths';
 	import Team from '$lib/components/Team.svelte';
 </script>
 
@@ -32,7 +33,7 @@
 		<div class="w-full md:w-1/2">
 			<img
 				class="h-auto w-full rounded-lg shadow-lg"
-				src="/landing.jpg"
+				src="{base}/landing.jpg"
 				alt="A student sitting at a desk, writing in a notebook"
 			/>
 		</div>
