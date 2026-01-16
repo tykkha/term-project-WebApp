@@ -17,8 +17,7 @@ const config = {
 		}),
 		paths: {
 			base: '/csc648-fa25-145-team09'
-		},
-		hashbang: true
+		}
 	}
 };
 
