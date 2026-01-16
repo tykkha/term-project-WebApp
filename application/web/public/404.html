@@ -3,9 +3,11 @@
 <head>
     <title>Redirecting...</title>
     <script>
-        // Redirect to index.html with the original path preserved
+        // Redirect to index.html with the path as a hash
         const path = window.location.pathname.replace('/csc648-fa25-145-team09', '');
-        window.location.replace('/csc648-fa25-145-team09/?redirect=' + encodeURIComponent(path));
+        if (path !== '/') {
+            window.location.replace('/csc648-fa25-145-team09/#' + path);
+        }
     </script>
 </head>
 <body>

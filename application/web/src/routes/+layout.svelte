@@ -6,6 +6,8 @@
 	import LoginModal from '$lib/components/LoginModal.svelte';
 	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 
 	let { children } = $props();
 
@@ -15,6 +17,17 @@
 	let isLoggedIn = $state(browser && sessionStorage.getItem('isLoggedIn') === 'true');
 
 	let lastPath = $state('');
+
+	// Handle hash-based routing for GitHub Pages
+	onMount(() => {
+		if (window.location.hash && !window.location.hash.startsWith('#%2F')) {
+			const hashPath = window.location.hash.slice(1); // Remove the #
+			// Only redirect if the current pathname doesn't already match
+			if (!window.location.pathname.endsWith(hashPath)) {
+				goto(hashPath, { replaceState: true });
+			}
+		}
+	});
 
 	//show popup immediately on every route change
 	$effect(() => {
