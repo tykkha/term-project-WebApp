@@ -20,9 +20,23 @@
 
 	// Handle hash-based routing for GitHub Pages
 	onMount(() => {
+		// Intercept all link clicks and convert to hash-based routing
+		document.addEventListener('click', (e) => {
+			const target = e.target as HTMLElement;
+			const link = target.closest('a[href]') as HTMLAnchorElement;
+			
+			if (link && link.href && !link.href.includes('http') && !link.href.includes('#')) {
+				e.preventDefault();
+				const path = new URL(link.href).pathname;
+				const cleanPath = path.replace('/csc648-fa25-145-team09', '');
+				window.location.hash = cleanPath;
+				goto(cleanPath, { replaceState: true });
+			}
+		});
+
+		// Handle hash navigation on page load
 		if (window.location.hash && !window.location.hash.startsWith('#%2F')) {
-			const hashPath = window.location.hash.slice(1); // Remove the #
-			// Only redirect if the current pathname doesn't already match
+			const hashPath = window.location.hash.slice(1);
 			if (!window.location.pathname.endsWith(hashPath)) {
 				goto(hashPath, { replaceState: true });
 			}
