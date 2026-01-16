@@ -26,6 +26,9 @@ jobs:
         working-directory: ./application/web
         run: npm run build
 
+      - name: Copy 404.html to build root
+        run: cp ./application/web/static/404.html ./application/web/build/404.html
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
