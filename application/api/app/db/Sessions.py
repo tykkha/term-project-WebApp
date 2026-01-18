@@ -14,6 +14,7 @@ class GatorGuidesSessions:
     
     def create_session(self, uid: int, tid: int, tags_id: int, day: str, time: int, location: str = 'Zoom') -> Optional[Dict[str, Any]]:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -24,13 +25,12 @@ class GatorGuidesSessions:
             """
             
             cursor.execute(query, (uid, tid, tags_id, day, time, location))
-            conn.commit()  
+            conn.commit()
             session_id = cursor.lastrowid
             
             # Fetch the created session
             cursor.execute("SELECT * FROM Sessions WHERE sid = %s", (session_id,))
             session = cursor.fetchone()
-            cursor.close()
             
             if session:
                 logger.info(f"Tutoring session created: {session_id}")
@@ -42,11 +42,14 @@ class GatorGuidesSessions:
                 conn.rollback()
             return None
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
     
     def get_session_notification_info(self, session_id: int) -> Optional[Dict[str, Any]]:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -71,7 +74,6 @@ class GatorGuidesSessions:
             
             cursor.execute(query, (session_id,))
             info = cursor.fetchone()
-            cursor.close()
             
             return info
             
@@ -79,11 +81,14 @@ class GatorGuidesSessions:
             logger.error(f"Get session notification info error: {e}", exc_info=True)
             return None
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
     
     def get_session(self, session_id: int) -> Optional[Dict[str, Any]]:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -107,7 +112,6 @@ class GatorGuidesSessions:
             
             cursor.execute(query, (session_id,))
             session = cursor.fetchone()
-            cursor.close()
             
             return session
             
@@ -115,11 +119,14 @@ class GatorGuidesSessions:
             logger.error(f"Get session error: {e}", exc_info=True)
             return None
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
     
     def start_session(self, session_id: int) -> bool:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -131,9 +138,8 @@ class GatorGuidesSessions:
             """
             
             cursor.execute(query, (session_id,))
-            conn.commit()  
+            conn.commit()
             rowcount = cursor.rowcount
-            cursor.close()
             
             if rowcount > 0:
                 logger.info(f"Session {session_id} started")
@@ -146,11 +152,14 @@ class GatorGuidesSessions:
                 conn.rollback()
             return False
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
     
     def end_session(self, session_id: int) -> bool:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -162,9 +171,8 @@ class GatorGuidesSessions:
             """
             
             cursor.execute(query, (session_id,))
-            conn.commit()  
+            conn.commit()
             rowcount = cursor.rowcount
-            cursor.close()
             
             if rowcount > 0:
                 logger.info(f"Session {session_id} ended")
@@ -177,11 +185,14 @@ class GatorGuidesSessions:
                 conn.rollback()
             return False
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def delete_session(self, session_id: int) -> bool:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -189,9 +200,8 @@ class GatorGuidesSessions:
             query = "DELETE FROM Sessions WHERE sid = %s"
             
             cursor.execute(query, (session_id,))
-            conn.commit()  
+            conn.commit()
             rowcount = cursor.rowcount
-            cursor.close()
             
             if rowcount > 0:
                 logger.info(f"Session {session_id} deleted")
@@ -204,11 +214,14 @@ class GatorGuidesSessions:
                 conn.rollback()
             return False
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
     
     def get_user_sessions(self, uid: int) -> List[Dict[str, Any]]:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -229,7 +242,6 @@ class GatorGuidesSessions:
             
             cursor.execute(query, (uid,))
             sessions = cursor.fetchall()
-            cursor.close()
             
             result = []
             for session in sessions:
@@ -257,11 +269,14 @@ class GatorGuidesSessions:
             logger.error(f"Get user sessions error: {e}", exc_info=True)
             return []
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def get_tutor_sessions(self, tid: int) -> List[Dict[str, Any]]:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -281,7 +296,6 @@ class GatorGuidesSessions:
             
             cursor.execute(query, (tid,))
             sessions = cursor.fetchall()
-            cursor.close()
             
             result = []
             for session in sessions:
@@ -309,5 +323,7 @@ class GatorGuidesSessions:
             logger.error(f"Get tutor sessions error: {e}", exc_info=True)
             return []
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()

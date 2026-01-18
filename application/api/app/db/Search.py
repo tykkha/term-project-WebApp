@@ -14,6 +14,7 @@ class GatorGuidesSearch:
 
     def search(self, query: str) -> List[Dict[str, Any]]:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -187,18 +188,20 @@ class GatorGuidesSearch:
                 data['courses'] = list(data['courses'])
                 results.append(data)
 
-            cursor.close()
             return results
 
         except Exception as e:
             logger.error(f"Search error for query '{query}': {e}", exc_info=True)
             return []
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def get_all_tags(self) -> List[Dict[str, Any]]:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -206,7 +209,6 @@ class GatorGuidesSearch:
             query = "SELECT tagsID, tags FROM Tags ORDER BY tags"
             cursor.execute(query)
             tags = cursor.fetchall()
-            cursor.close()
             
             return [{"id": tag["tagsID"], "name": tag["tags"]} for tag in tags]
             
@@ -214,5 +216,7 @@ class GatorGuidesSearch:
             logger.error(f"Get tags error: {e}", exc_info=True)
             return []
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()

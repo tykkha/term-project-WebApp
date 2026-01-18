@@ -23,6 +23,7 @@ class GatorGuidesUsers:
 
     def create_user(self, first_name: str, last_name: str, email: str, password: str, user_type: str = 'user', phone: Optional[str] = None, studentID: Optional[str] = None, profile_picture: Optional[str] = None, bio: Optional[str] = None) -> Optional[Dict[str, Any]]:
         conn = None
+        cursor = None
         try:
             if user_type not in ['user', 'admin']:
                 logger.error(f"Invalid user type: {user_type}")
@@ -46,7 +47,6 @@ class GatorGuidesUsers:
             )
             conn.commit()
             user_id = cursor.lastrowid
-            cursor.close()
 
             # Return user info
             return {
@@ -68,11 +68,14 @@ class GatorGuidesUsers:
             return None
         
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def authenticate_user(self, email: str, password: str) -> Optional[Dict[str, Any]]:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -85,7 +88,6 @@ class GatorGuidesUsers:
             
             cursor.execute(query, (email,))
             user = cursor.fetchone()
-            cursor.close()
 
             if not user:
                 logger.warning(f"Authentication failed: user not found")
@@ -113,11 +115,14 @@ class GatorGuidesUsers:
             logger.error(f"Authentication error: {e}", exc_info=True)
             return None
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def get_user(self, uid: int) -> Optional[Dict[str, Any]]:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -130,7 +135,6 @@ class GatorGuidesUsers:
             
             cursor.execute(query, (uid,))
             user = cursor.fetchone()
-            cursor.close()
 
             if user:
                 return {
@@ -151,11 +155,14 @@ class GatorGuidesUsers:
             logger.error(f"Get user error: {e}", exc_info=True)
             return None
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def update_user(self, uid: int, first_name: Optional[str] = None, last_name: Optional[str] = None, profile_picture: Optional[str] = None, bio: Optional[str] = None) -> bool:
         conn = None
+        cursor = None
         try:
             updates = []
             values = []
@@ -185,7 +192,6 @@ class GatorGuidesUsers:
             cursor.execute(query, tuple(values))
             conn.commit()
             rowcount = cursor.rowcount
-            cursor.close()
             
             return rowcount > 0
 
@@ -195,5 +201,7 @@ class GatorGuidesUsers:
                 conn.rollback()
             return False
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()

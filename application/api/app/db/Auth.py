@@ -39,7 +39,9 @@ class ConnectionPool:
                 database=database,
                 user=user,
                 password=password,
-                autocommit=False
+                autocommit=False,
+                connect_timeout=10,
+                pool_timeout=30
             )
             self._initialized = True
             logger.info(f"Connection pool initialized")
@@ -100,6 +102,8 @@ class ConnectionCleaner:
     
     def _perform_cleanup(self):
         pool = ConnectionPool()
+        conn = None
+        cursor = None
         
         try:
             conn = pool.get_connection()
@@ -126,11 +130,14 @@ class ConnectionCleaner:
             if killed_count > 0:
                 logger.info(f"Killed idle connections")
             
-            cursor.close()
-            conn.close()
-            
         except Exception as e:
             logger.error(f"Cleanup operation failed")
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+
 
 class GatorGuidesAuth:
     def __init__(self):
@@ -142,6 +149,7 @@ class GatorGuidesAuth:
     # Create a new session
     def create_session(self, uid: int, duration_hours: int = 24) -> Optional[str]:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -156,7 +164,6 @@ class GatorGuidesAuth:
             
             cursor.execute(query, (session_id, uid, expires_at))
             conn.commit()
-            cursor.close()
             logger.info(f"Session created for user {uid}")
             return session_id
             
@@ -166,12 +173,15 @@ class GatorGuidesAuth:
                 conn.rollback()
             return None
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     # Validate session and return user ID if true
     def validate_session(self, session_id: str) -> Optional[int]:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -184,7 +194,6 @@ class GatorGuidesAuth:
             
             cursor.execute(query, (session_id,))
             session = cursor.fetchone()
-            cursor.close()
             
             if not session:
                 return None
@@ -199,12 +208,15 @@ class GatorGuidesAuth:
             logger.error(f"Validate session error: {e}", exc_info=True)
             return None
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
         
     # Delete a specific session
     def delete_session(self, session_id: str) -> bool:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -213,7 +225,6 @@ class GatorGuidesAuth:
             cursor.execute(query, (session_id,))
             conn.commit()
             rowcount = cursor.rowcount
-            cursor.close()
             return rowcount > 0
             
         except Exception as e:
@@ -222,12 +233,15 @@ class GatorGuidesAuth:
                 conn.rollback()
             return False
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
         
     # Logout from all devices
     def delete_user_sessions(self, uid: int) -> bool:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -235,7 +249,6 @@ class GatorGuidesAuth:
             query = "DELETE FROM LoginSessions WHERE uid = %s"
             cursor.execute(query, (uid,))
             conn.commit()
-            cursor.close()
             return True
             
         except Exception as e:
@@ -244,12 +257,15 @@ class GatorGuidesAuth:
                 conn.rollback()
             return False
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
         
     # Remove old sessions
     def cleanup_expired_sessions(self) -> int:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -258,7 +274,6 @@ class GatorGuidesAuth:
             cursor.execute(query)
             conn.commit()
             count = cursor.rowcount
-            cursor.close()
             logger.info(f"Cleaned up expired sessions")
             return count
             
@@ -268,5 +283,7 @@ class GatorGuidesAuth:
                 conn.rollback()
             return 0
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()

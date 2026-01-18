@@ -15,6 +15,7 @@ class GatorGuidesAvailability:
     def add_availability(self, tid: int, day: str, start_time: int, end_time: int) -> Optional[Dict[str, Any]]:
         """Add a new availability slot for a tutor"""
         conn = None
+        cursor = None
         try:
             if start_time >= end_time:
                 logger.error(f"Invalid time range: start_time={start_time}, end_time={end_time}")
@@ -35,7 +36,6 @@ class GatorGuidesAvailability:
             
             cursor.execute("SELECT * FROM TutorAvailability WHERE availabilityID = %s", (availability_id,))
             availability = cursor.fetchone()
-            cursor.close()
             
             logger.info(f"Availability added: tid={tid}, day={day}, time={start_time}-{end_time}")
             return availability
@@ -46,12 +46,15 @@ class GatorGuidesAvailability:
                 conn.rollback()
             return None
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def get_tutor_availability(self, tid: int) -> List[Dict[str, Any]]:
         """Get all availability slots for a tutor"""
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -67,7 +70,6 @@ class GatorGuidesAvailability:
             
             cursor.execute(query, (tid,))
             availability = cursor.fetchall()
-            cursor.close()
             
             return availability
             
@@ -75,12 +77,15 @@ class GatorGuidesAvailability:
             logger.error(f"Get tutor availability error: {e}", exc_info=True)
             return []
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def remove_availability(self, availability_id: int, tid: int) -> bool:
         """Remove an availability slot"""
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -89,7 +94,6 @@ class GatorGuidesAvailability:
             cursor.execute(query, (availability_id, tid))
             conn.commit()
             rowcount = cursor.rowcount
-            cursor.close()
             
             if rowcount > 0:
                 logger.info(f"Availability removed: availabilityID={availability_id}")
@@ -102,12 +106,15 @@ class GatorGuidesAvailability:
                 conn.rollback()
             return False
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def set_bulk_availability(self, tid: int, availability_slots: List[Dict[str, Any]]) -> bool:
         """Set multiple availability slots at once, replacing existing ones"""
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -129,7 +136,6 @@ class GatorGuidesAvailability:
                         slot['endTime']
                     ))
             conn.commit()
-            cursor.close()
             logger.info(f"Bulk availability set for tid={tid}, {len(availability_slots)} slots")
             return True
             
@@ -139,12 +145,15 @@ class GatorGuidesAvailability:
                 conn.rollback()
             return False
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def check_availability(self, tid: int, day: str, time: int) -> bool:
         """Check if a tutor is available at a specific day and time"""
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -161,7 +170,6 @@ class GatorGuidesAvailability:
             
             cursor.execute(query, (tid, day, time, time))
             result = cursor.fetchone()
-            cursor.close()
             
             return result['count'] > 0
             
@@ -169,12 +177,15 @@ class GatorGuidesAvailability:
             logger.error(f"Check availability error: {e}", exc_info=True)
             return False
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def get_available_times_for_day(self, tid: int, day: str) -> List[int]:
         """Get all available hours for a tutor on a specific day"""
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -188,7 +199,6 @@ class GatorGuidesAvailability:
             
             cursor.execute(query, (tid, day))
             slots = cursor.fetchall()
-            cursor.close()
             
             # Generate list of all available hours
             available_hours = []
@@ -203,5 +213,7 @@ class GatorGuidesAvailability:
             logger.error(f"Get available times error: {e}", exc_info=True)
             return []
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()

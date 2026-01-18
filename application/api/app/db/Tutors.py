@@ -15,6 +15,7 @@ class GatorGuidesTutors:
 
     def update_tutor_rating(self, tid: int) -> bool:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -35,8 +36,7 @@ class GatorGuidesTutors:
                 update_query = "UPDATE Tutor SET rating = 0.0 WHERE tid = %s"
                 cursor.execute(update_query, (tid,))
             
-            conn.commit()  
-            cursor.close()
+            conn.commit()
             return True
 
         except Exception as e:
@@ -45,11 +45,14 @@ class GatorGuidesTutors:
                 conn.rollback()
             return False
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def create_tutor(self, uid: int, rating: float = 0.0, status: str = 'available') -> Optional[Dict[str, Any]]:
         conn = None
+        cursor = None
         try:
             valid_statuses = ['available', 'away', 'busy']
             if status not in valid_statuses:
@@ -69,14 +72,12 @@ class GatorGuidesTutors:
 
             if not user:
                 logger.error(f"User {uid} does not exist")
-                cursor.close()
                 return None
 
             tutor_check = "SELECT tid FROM Tutor WHERE uid = %s"
             cursor.execute(tutor_check, (uid,))
             if cursor.fetchone():
                 logger.error(f"User {uid} is already a tutor")
-                cursor.close()
                 return None
 
             query = """
@@ -84,9 +85,8 @@ class GatorGuidesTutors:
                     VALUES (%s, %s, %s, 'pending')
                     """
             cursor.execute(query, (uid, rating, status))
-            conn.commit()  
+            conn.commit()
             tutor_id = cursor.lastrowid
-            cursor.close()
 
             return {
                 'tid': tutor_id,
@@ -104,11 +104,14 @@ class GatorGuidesTutors:
                 conn.rollback()
             return None
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def update_verification_status(self, tid: int, status: str) -> bool:
         conn = None
+        cursor = None
         try:
             valid_statuses = ['unapproved', 'pending', 'approved']
             if status not in valid_statuses:
@@ -120,9 +123,8 @@ class GatorGuidesTutors:
             
             query = "UPDATE Tutor SET verificationStatus = %s WHERE tid = %s"
             cursor.execute(query, (status, tid))
-            conn.commit()  
+            conn.commit()
             rowcount = cursor.rowcount
-            cursor.close()
             
             return rowcount > 0
 
@@ -132,11 +134,14 @@ class GatorGuidesTutors:
                 conn.rollback()
             return False
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def add_tutor_tags(self, tid: int, tag_ids: List[int]) -> bool:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
@@ -145,7 +150,6 @@ class GatorGuidesTutors:
             cursor.execute(check_query, (tid,))
             if not cursor.fetchone():
                 logger.error(f"Tutor {tid} does not exist")
-                cursor.close()
                 return False
 
             for tag_id in tag_ids:
@@ -156,8 +160,7 @@ class GatorGuidesTutors:
                     # Tag already exists for this tutor, skip
                     continue
 
-            conn.commit()  
-            cursor.close()
+            conn.commit()
             return True
 
         except Exception as e:
@@ -166,11 +169,14 @@ class GatorGuidesTutors:
                 conn.rollback()
             return False
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def get_tutor(self, tid: int) -> Optional[Dict[str, Any]]:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -187,7 +193,6 @@ class GatorGuidesTutors:
             tutor = cursor.fetchone()
 
             if not tutor:
-                cursor.close()
                 return None
 
             tags_query = """
@@ -199,7 +204,6 @@ class GatorGuidesTutors:
                          """
             cursor.execute(tags_query, (tid,))
             tags = cursor.fetchall()
-            cursor.close()
 
             return {
                 'tid': tutor['tid'],
@@ -221,11 +225,14 @@ class GatorGuidesTutors:
             logger.error(f"Get tutor error: {e}", exc_info=True)
             return None
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def get_tutor_by_uid(self, uid: int) -> Optional[Dict[str, Any]]:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -240,7 +247,6 @@ class GatorGuidesTutors:
                     """
             cursor.execute(query, (uid,))
             tutor = cursor.fetchone()
-            cursor.close()
 
             if tutor:
                 return {
@@ -259,6 +265,8 @@ class GatorGuidesTutors:
             logger.error(f"Get tutor by uid error: {e}", exc_info=True)
             return None
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
@@ -268,6 +276,7 @@ class GatorGuidesTutors:
         Optimized to fetch all tutor-tag relationships in a single query.
         """
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -298,7 +307,6 @@ class GatorGuidesTutors:
             tutors = cursor.fetchall()
 
             if not tutors:
-                cursor.close()
                 return []
 
             # Get all tutor IDs
@@ -315,7 +323,6 @@ class GatorGuidesTutors:
 
             cursor.execute(tags_query, tutor_ids)
             all_tags = cursor.fetchall()
-            cursor.close()
 
             # Group tags by tutor ID
             tags_by_tutor = {}
@@ -349,6 +356,8 @@ class GatorGuidesTutors:
             logger.error(f"Get all tutors error: {e}", exc_info=True)
             return []
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
@@ -358,6 +367,7 @@ class GatorGuidesTutors:
         Optimized to fetch all tutor-tag relationships in a single query.
         """
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -389,7 +399,6 @@ class GatorGuidesTutors:
             tutors = cursor.fetchall()
 
             if not tutors:
-                cursor.close()
                 return []
 
             # Get all tutor IDs
@@ -406,7 +415,6 @@ class GatorGuidesTutors:
         
             cursor.execute(tags_query, tutor_ids)
             all_tags = cursor.fetchall()
-            cursor.close()
 
             # Group tags by tutor ID
             tags_by_tutor = {}
@@ -440,6 +448,8 @@ class GatorGuidesTutors:
             logger.error(f"Get top tutors error: {e}", exc_info=True)
             return []
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
@@ -451,6 +461,7 @@ class GatorGuidesTutors:
             rating: float
     ) -> Optional[Dict[str, Any]]:
         conn = None
+        cursor = None
         try:
             if not (0 <= rating <= 5):
                 logger.error(f"Invalid rating value: {rating}. Must be between 0 and 5")
@@ -469,7 +480,6 @@ class GatorGuidesTutors:
                 logger.error(
                     f"Invalid session: sid={sid}, tid={tid}, uid={uid} or session not concluded"
                 )
-                cursor.close()
                 return None
 
             query = """
@@ -477,9 +487,8 @@ class GatorGuidesTutors:
                     VALUES (%s, %s, %s, %s, NOW())
                     """
             cursor.execute(query, (tid, uid, sid, rating))
-            conn.commit()  
+            conn.commit()
             rating_id = cursor.lastrowid
-            cursor.close()
 
             self.update_tutor_rating(tid)
 
@@ -503,11 +512,14 @@ class GatorGuidesTutors:
                 conn.rollback()
             return None
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def get_tutor_rating_count(self, tid: int) -> int:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -515,7 +527,6 @@ class GatorGuidesTutors:
             query = "SELECT COUNT(*) AS count FROM Ratings WHERE tid = %s"
             cursor.execute(query, (tid,))
             result = cursor.fetchone()
-            cursor.close()
             
             return result['count'] if result else 0
 
@@ -523,11 +534,14 @@ class GatorGuidesTutors:
             logger.error(f"Get rating count error: {e}", exc_info=True)
             return 0
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def user_can_rate_session(self, uid: int, sid: int) -> bool:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -539,13 +553,11 @@ class GatorGuidesTutors:
                             """
             cursor.execute(session_query, (sid, uid))
             if not cursor.fetchone():
-                cursor.close()
                 return False
 
             rating_query = "SELECT rid FROM Ratings WHERE uid = %s AND sid = %s"
             cursor.execute(rating_query, (uid, sid))
             result = cursor.fetchone() is None
-            cursor.close()
             
             return result
 
@@ -553,11 +565,14 @@ class GatorGuidesTutors:
             logger.error(f"Check rating eligibility error: {e}", exc_info=True)
             return False
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def get_pending_tutors(self) -> List[Dict[str, Any]]:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -584,7 +599,6 @@ class GatorGuidesTutors:
             tutors = cursor.fetchall()
 
             if not tutors:
-                cursor.close()
                 return []
 
             # Get all tutor IDs
@@ -600,7 +614,6 @@ class GatorGuidesTutors:
 
             cursor.execute(tags_query, tutor_ids)
             all_tags = cursor.fetchall()
-            cursor.close()
 
             # Group tags by tutor ID
             tags_by_tutor = {}
@@ -636,11 +649,14 @@ class GatorGuidesTutors:
             logger.error(f"Get pending tutors error: {e}", exc_info=True)
             return []
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def reject_tutor(self, tid: int) -> bool:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -652,20 +668,17 @@ class GatorGuidesTutors:
             
             if not tutor:
                 logger.error(f"Tutor {tid} does not exist")
-                cursor.close()
                 return False
             
             if tutor['verificationStatus'] != 'pending':
                 logger.error(f"Tutor {tid} is not pending (current status: {tutor['verificationStatus']})")
-                cursor.close()
                 return False
             
             # Update to unapproved
             update_query = "UPDATE Tutor SET verificationStatus = 'unapproved' WHERE tid = %s"
             cursor.execute(update_query, (tid,))
-            conn.commit()  
+            conn.commit()
             rowcount = cursor.rowcount
-            cursor.close()
             
             if rowcount > 0:
                 logger.info(f"Tutor {tid} rejected (status set to unapproved)")
@@ -679,11 +692,14 @@ class GatorGuidesTutors:
                 conn.rollback()
             return False
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def approve_tutor(self, tid: int) -> bool:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -695,20 +711,17 @@ class GatorGuidesTutors:
             
             if not tutor:
                 logger.error(f"Tutor {tid} does not exist")
-                cursor.close()
                 return False
             
             if tutor['verificationStatus'] != 'pending':
                 logger.error(f"Tutor {tid} is not pending (current status: {tutor['verificationStatus']})")
-                cursor.close()
                 return False
             
             # Update to approved
             update_query = "UPDATE Tutor SET verificationStatus = 'approved' WHERE tid = %s"
             cursor.execute(update_query, (tid,))
-            conn.commit()  
+            conn.commit()
             rowcount = cursor.rowcount
-            cursor.close()
             
             if rowcount > 0:
                 logger.info(f"Tutor {tid} accepted (status set to approved)")
@@ -722,5 +735,7 @@ class GatorGuidesTutors:
                 conn.rollback()
             return False
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()

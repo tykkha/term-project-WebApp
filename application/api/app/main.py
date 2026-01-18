@@ -65,7 +65,7 @@ async def lifespan(app: FastAPI):
             database=settings.DATABASE_NAME,
             user=settings.DATABASE_USER,
             password=settings.DATABASE_PASSWORD,
-            pool_size=20
+            pool_size=10
         )
         logger.info("Connection pool initialized")
 
@@ -143,14 +143,14 @@ def read_item(item_id: int, q: Union[str, None] = None):
 
 @app.get("/health")
 async def health_check():
+    conn = None
+    cursor = None
     try:
         pool = ConnectionPool()
         conn = pool.get_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT 1")
         cursor.fetchone()
-        cursor.close()
-        conn.close()
         
         return {
             "status": "healthy",
@@ -165,6 +165,11 @@ async def health_check():
             "database": "disconnected",
             "error": str(e)
         }
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 app.include_router(search.router, prefix="/api")
 app.include_router(sessions.router, prefix="/api")

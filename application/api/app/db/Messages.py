@@ -15,6 +15,7 @@ class GatorGuidesMessages:
 
     def can_message(self, sender_uid: int, receiver_uid: int) -> bool:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -30,7 +31,6 @@ class GatorGuidesMessages:
             
             cursor.execute(query, (sender_uid, receiver_uid, receiver_uid, sender_uid))
             result = cursor.fetchone()
-            cursor.close()
             
             return result['session_count'] > 0
 
@@ -38,11 +38,14 @@ class GatorGuidesMessages:
             logger.error(f"Can message check error: {e}", exc_info=True)
             return False
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def send_message(self, sender_uid: int, receiver_uid: int, content: str) -> Optional[Dict[str, Any]]:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -71,7 +74,6 @@ class GatorGuidesMessages:
             
             cursor.execute(select_query, (message_id,))
             message = cursor.fetchone()
-            cursor.close()
             
             if message:
                 return {
@@ -91,11 +93,14 @@ class GatorGuidesMessages:
                 conn.rollback()
             return None
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def get_conversation(self, uid1: int, uid2: int, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -117,7 +122,6 @@ class GatorGuidesMessages:
             
             cursor.execute(query, (uid1, uid2, uid2, uid1, limit, offset))
             messages = cursor.fetchall()
-            cursor.close()
             
             results = []
             for msg in messages:
@@ -136,11 +140,14 @@ class GatorGuidesMessages:
             logger.error(f"Get conversation error: {e}", exc_info=True)
             return []
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def get_recent_conversations(self, uid: int, limit: int = 10) -> List[Dict[str, Any]]:
         conn = None
+        cursor = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor(dictionary=True)
@@ -173,7 +180,6 @@ class GatorGuidesMessages:
             
             cursor.execute(query, (uid, uid, uid, uid, uid, uid, limit))
             conversations = cursor.fetchall()
-            cursor.close()
             
             results = []
             for conv in conversations:
@@ -190,5 +196,7 @@ class GatorGuidesMessages:
             logger.error(f"Get recent conversations error: {e}", exc_info=True)
             return []
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
