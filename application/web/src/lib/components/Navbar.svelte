@@ -84,10 +84,6 @@
 		<a href="/dashboard">Dashboard</a>
 	</div>
 
-	<div class="flex w-full justify-center gap-8 bg-[#ff7070] p-2 text-center text-black">
-		This website is solely for demonstration purposes. This is a project that was designed for a
-		CSC648 class and is not real in any way.
-	</div>
 </nav>
 {#if open}
 	<div class="fixed inset-0 z-50 h-screen w-screen bg-white">

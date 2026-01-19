@@ -44,3 +44,5 @@ server-db:
 	mysql -u guides -pgatorguides < api/app/db/Inserts.sql 
 	sudo systemctl start api.service
 	sudo systemctl start svelte.service
+
+-include Makefile.local

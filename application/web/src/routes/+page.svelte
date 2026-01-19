@@ -104,12 +104,12 @@
 	>
 		<h1 class="w-full text-center text-3xl font-bold md:text-5xl">Meet the Team</h1>
 		<div
-			class="mx-auto grid w-full max-w-6xl grid-cols-2 gap-4 pt-8 text-center sm:grid-cols-3 md:grid-cols-5 md:gap-8"
+			class="mx-auto grid w-full max-w-6xl grid-cols-2 justify-items-center gap-4 pt-8 text-center sm:grid-cols-4 md:gap-8"
 		>
 			<Team
 				name="Jason Javandel"
 				src="https://avatars.githubusercontent.com/u/53279269?v=4"
-				position="Team Lead"
+				position="Project/API Lead"
 				url="/about/jason"
 			/>
 			<Team
@@ -121,14 +121,8 @@
 			<Team
 				name="Connor Moore"
 				src="https://avatars.githubusercontent.com/u/100100421?v=4"
-				position="Database Lead"
+				position="Backend/Database Lead & API Support"
 				url="/about/connor"
-			/>
-			<Team
-				name="Manea"
-				src="https://avatars.githubusercontent.com/u/127?v=4"
-				position="Backend Lead"
-				url="/about/manea"
 			/>
 			<Team
 				name="Shirish Maharjan"

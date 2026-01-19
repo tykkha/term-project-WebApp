@@ -11,3 +11,5 @@ application/api/app/db/min-Inserts.sql
 application/api/app/db/Inserts.sql
 queries/Query.sql
 credentials/GatorGuidesSSH.pem
+credentials/
+Makefile.local
