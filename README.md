@@ -1,24 +1,20 @@
-# csc648 Repository
-
-## Please when ready add your teams application URL or IP to the repository description. This will help with grading. Teams are expected to keep this value up to date.
-
-## Please do the following steps before completing Milestone 0.
-1. Change the name of the repository. All that needs to change is the NN to your respective team number. Team numbers whose value is less than 10, please pad with a 0. Ex team 1 is Team01 team 11 is Team11. Please make sure to also remove the username from the repository as well. Teams with incorrectly name repository will have points deducted from their milestone 0 grades.
-      - Please follow the naming convention assigned by your instructor.
-
-1. PLEASE REMOVE THE USERNAME FROM THE REPOSITORY NAME!!!
-
-2. Add ALL members of your team to this repository. For it to count, they must ACCEPT the invite.
-
-3. Fill out the table below
+# CSC648 Software Engineering Term Project
 
 
-| Student Name | School Email | GitHub Username |
-|    :---:     |     :---:     |     :---:       |
-|Jason Javandel|jjavandel@sfsu.edu|cherryyeti|
-|Connor Moore|cmoore14@sfsu.edu|tykkha|
-|Andy Yip|ayip3@sfsu.edu|andyyip915|
-|Shirish Maharjan|smaharjan@sfsu.edu|Shirishsm5|
-|Manea Manea|mmanea@mail.sfsu.edu|manea127|
+## The purpose of this project is to demostrate your skills across the stack as a Software Engineer
+## as well as a team-member and team-leader.
+
+It is your responsibility to manage your own milestones, deadlines, and requirements as you progress and to ensure that 
+all of your quotas are hit and the development cycle continues. You will need to demonstate the skills to assess 
+business requirements as well as determine if requests are or aren't doable/feasible in the allotted timeline
+you are projected to complete each milestone by. 
+
+
+| Student Name | GitHub Username |
+|    :---:     |     :---:       |
+|Jason Javandel|cherryyeti|
+|Connor Moore|tykkha|
+|Andy Yip|andyyip915|
+|Shirish Maharjan|Shirishsm5|
 
 ## NO code needs to be stored in the root of your repository. You may rename the application folder if you like to your team's application name. But all source code related to your team's application should be stored inside the application folder.
