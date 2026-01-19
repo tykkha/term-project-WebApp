@@ -1,13 +1,11 @@
 # CSC648 Software Engineering Term Project
 
 
-## The purpose of this project is to demostrate your skills across the stack as a Software Engineer
-## as well as a team-member and team-leader.
+## The purpose of this project is to demostrate your skills across the stack as a Software Engineer as well as a team-member and team-leader.
 
-It is your responsibility to manage your own milestones, deadlines, and requirements as you progress and to ensure that 
-all of your quotas are hit and the development cycle continues. You will need to demonstate the skills to assess 
-business requirements as well as determine if requests are or aren't doable/feasible in the allotted timeline
-you are projected to complete each milestone by. 
+The development team shall be responsible for managing all project milestones, deadlines, and requirements. All development quotas shall be met to ensure the development
+ cycle remains on schedule. The development team shall evaluate business requirements and determine the feasibility of client requests within the allotted timeline. Upon 
+ acceptance of any request, the development team shall define an appropriate project timeline and shall be responsible for maintaining compliance with all associated quotas.
 
 
 | Student Name | GitHub Username |
