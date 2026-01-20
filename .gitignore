@@ -13,3 +13,5 @@ queries/Query.sql
 credentials/GatorGuidesSSH.pem
 credentials/
 Makefile.local
+.env
+**/.env
